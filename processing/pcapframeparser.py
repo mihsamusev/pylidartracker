@@ -1,7 +1,4 @@
 import dpkt
-import time
-import numpy as np
-import pandas as pd
 from .dataentities import Packet,LaserFiring,Frame
 
 class PcapFrameParser:

@@ -2,7 +2,7 @@ import sys
 import numpy as np
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph.opengl as gl
-import iconresource_rc
+import ui.iconresource_rc
 
 from ui.transformdockui import TransformDock
 from ui.clippingdockui import ClippingDock
