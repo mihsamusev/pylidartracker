@@ -1,0 +1,37 @@
+{
+    "transformer": {
+        "active": true,
+        "method": "", 
+        "params":{}
+    },
+    "clipper": {
+        "active": true,
+        "method": "",
+        "params": {}
+    },
+    "bg_extractor": {
+        "active": false,
+        "frame_path": "",
+        "method": "",
+        "params": {}
+    },
+    "bg_subtractor": {
+        "active": true,
+        "method": "",
+        "params": {}
+    },
+    "clusterer": {
+        "active": false,
+        "method": "",
+        "params": {}
+    },
+    "tracker": {
+        "active": true,
+        "method": "",
+        "params": {}
+    },
+    "results_writter": {
+        "active": true,
+        "types": []
+    }
+}
