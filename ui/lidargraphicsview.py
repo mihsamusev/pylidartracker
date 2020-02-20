@@ -121,11 +121,6 @@ class LidarGraphicsView(gl.GLViewWidget):
                     color = (1.0, 1.0, 0.0, 1.0)
                 self.triangle.setData(pos=edges,color=color,width=self.triangleWidth)
 
-    def drawSelectedTriangle(self):
-        if self.nSelected == 3:
-            edges = np.vstack((self.selected, self.selected[0,:]))
-            color = (1.0, 1.0, 0.0, 1.0)
-
     def updateSelectedRawPoints(self):
         m = self.projectionMatrix() * self.viewMatrix()
         view_w = self.width()
@@ -164,17 +159,6 @@ class LidarGraphicsView(gl.GLViewWidget):
             self.rawColor[:,1] = 1
             self.rawColor[:,2] = 0
 
-    def setPlanePoints(self, pts):
-        if pts is None:
-            self.planePoints = np.zeros((1,3))
-            self.planeColor = np.zeros((1,3), dtype=np.float32)
-        else:
-            self.planePoints = pts
-            self.planeColor = np.zeros((pts.shape[0],3), dtype=np.float32)
-            self.planeColor[:,0] = 1
-            self.planeColor[:,1] = 0
-            self.planeColor[:,2] = 1
-
     def setCropBox(self, polygon, zrange):
         if polygon is None or len(polygon) < 3:
             self.cb_top_poly = np.zeros((2,3))
@@ -195,10 +179,6 @@ class LidarGraphicsView(gl.GLViewWidget):
         self.rawCloud.setData(pos=self.rawPoints,
             color=self.rawColor,size=self.rawPtSize)
         
-        # draw plane inlier points
-        self.planeCloud.setData(pos=self.planePoints,
-            color=self.planeColor,size=self.planePtSize)
-
         # draw crop box
         self.cb_top_poly_line.setData(pos=self.cb_top_poly,
             color=self.cbColor, width=self.cb_size)

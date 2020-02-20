@@ -46,10 +46,6 @@ class TransformDock(QtWidgets.QDockWidget):
         self.updateResult(None)
         self.groupLayoutV.addWidget(self.transformHeader)
         self.groupLayoutV.addWidget(self.transformResult)
-        self.displayPoints = QtWidgets.QCheckBox("Display selected points")
-        self.displayPoints.setChecked(True)
-        self.displayPoints.setEnabled(False)
-        self.groupLayoutV.addWidget(self.displayPoints)
 
         # apply button
         self.applyLayoutH = QtWidgets.QHBoxLayout()
@@ -68,6 +64,16 @@ class TransformDock(QtWidgets.QDockWidget):
         # connect visual signals
         self.connectOwnButtons()
 
+    def set_from_config(self, **kwargs):
+        self.enableTransform.setChecked(True)
+        self.updateResult(kwargs["normal"], kwargs["intercept"])
+        self.enableResults(True)
+
+    def reset(self):
+        self.enableTransform.setChecked(False)
+        self.updateResult(None)
+        self.enableResults(False)
+
     def connectOwnButtons(self):
         self.enableTransform.stateChanged.connect(self.toggleTransform)
 
@@ -77,36 +83,34 @@ class TransformDock(QtWidgets.QDockWidget):
         else:
             self.groupBox.setEnabled(False)
 
-    def _get_result_text(self, coeff):
+    def _get_result_text(self, normal, intercept):
         return (
-            f"nx = {coeff[0]:.2f};\n"
-            f"ny = {coeff[1]:.2f};\n"
-            f"nz = {coeff[2]:.2f};\n"
-            f"offset = {coeff[3]:.2f}\n"
-            "(relative to the current CS)")
+            f"nx = {normal[0]:.2f};\n"
+            f"ny = {normal[1]:.2f};\n"
+            f"nz = {normal[2]:.2f};\n"
+            f"offset = {intercept:.2f}\n"
+            "(relative to the original CS)")
 
-    def updateResult(self, coeff):
+    def updateResult(self, normal=None, intercept=None):
         """Display calculated values for plane normal and offset"""
-        if coeff is None:
+        if normal is None or intercept is None:
             self.transformHeader.setText("Plane is not estimated")
             txt = ""
         else:
             self.transformHeader.setText("Plane is estimated:")
-            txt = self._get_result_text(coeff)
+            txt = self._get_result_text(normal, intercept)
         self.transformResult.setText(txt)
 
     def enableResults(self, state):
         self.transformHeader.setEnabled(state)
         self.transformResult.setEnabled(state)
-        self.displayPoints.setEnabled(state)
 
-class SimpleController():
+class ExampleController():
     def __init__(self, dock, graphics):
         self.dock = dock
         self.graphics = graphics
         self.dock.pickBtn.toggled.connect(self._allowSelection)
         self.graphics.threePointsPicked.connect(self._countPoints)
-        self.dock.displayPoints.stateChanged.connect(self.showPoints)
         self.dock.enableResults(False)
 
     def _countPoints(self):
@@ -115,17 +119,11 @@ class SimpleController():
         print(self.graphics.getSelectedPoints())
         self.dock.pickBtn.setChecked(False)
 
-    def showPoints(self):
-        if self.dock.displayPoints.isChecked():
-            self.graphics.setSelectedVisible(True)
-        else:
-            self.graphics.setSelectedVisible(False)
-
     def _allowSelection(self):
         if self.dock.pickBtn.isChecked():
             self.dock.pickBtn.setText("Stop point picking")
             self.graphics.setSelectionAllowed(True)
-            self.dock.displayPoints.setChecked(True)
+            self.graphics.setSelectedVisible(True)
             self.graphics.resetSelected()
             self.dock.enableResults(False)
         else:
@@ -136,8 +134,6 @@ class SimpleController():
                 self.graphics.resetSelected()
             else:
                 self.dock.enableResults(True)
-
-
 
 if __name__ == '__main__':
     import sys
@@ -163,7 +159,7 @@ if __name__ == '__main__':
     dock = TransformDock(parent=win)
     win.addDockWidget(QtCore.Qt.DockWidgetArea(2), dock)
 
-    ctrl = SimpleController(dock, graphicsView)
+    ctrl = ExampleController(dock, graphicsView)
     win.show()
     sys.exit(app.exec_())
 

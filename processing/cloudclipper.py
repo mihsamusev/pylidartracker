@@ -8,7 +8,7 @@ class CloudClipper():
             return PolarClipper(**kwargs)
         elif method == "cartesian":
             return CartesianClipper(**kwargs)
-        elif method == "polygonal":
+        elif method == "polygon":
             return PolygonalClipper(**kwargs)
         else:
             ValueError(method)
@@ -25,6 +25,9 @@ class PolarClipper():
     def clip(self, data):
         # Not implemented
         return data
+
+    def get_config(self):
+        return {}
 
 class CartesianClipper():
     def __init__(self, x_range, y_range,
@@ -50,12 +53,15 @@ class CartesianClipper():
 
         return data[mask]
 
+    def get_config(self):
+        return {}
+
 class PolygonalClipper():
     def __init__(self, polygon, z_range, inverse=False):
         # verify polygon is not self intersecting
         # z_range is sorted
-        self.polygon = polygon
-        self.z_range = z_range
+        self.polygon = np.array(polygon)
+        self.z_range = np.array(z_range)
         self.inverse = inverse
 
     def clip(self, data):
@@ -73,5 +79,15 @@ class PolygonalClipper():
             mask = np.invert(mask)
 
         return data[mask]
+
+    def get_config(self):
+            return {
+            "method": "polygon", 
+            "params": {
+                "polygon": self.polygon.tolist(),
+                "z_range": self.z_range.tolist(),
+                "inverse": self.inverse
+                }
+            }
     
 

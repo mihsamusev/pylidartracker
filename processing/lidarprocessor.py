@@ -1,8 +1,9 @@
 import copy
+import json
 import numpy as np
 from .pcapframeparser import PcapFrameParser
 from .framestream import FrameStream
-from .triangleplanetranformer import TrianglePlaneTransformer
+from .planetranformer import PlaneTransformer
 from .cloudclipper import CloudClipper
 
 class LidarProcessor():
@@ -20,6 +21,47 @@ class LidarProcessor():
         
         self.bg_subtractor = None
         self.backgroundFrame = None
+
+    #
+    # LOAD/SAVE config
+    #
+    def init_from_config(self, configpath):
+        with open(configpath, "r") as read_file:
+            config = json.load(read_file)
+
+        # call processors one by one
+        # transformer
+        if "transformer" in config.keys():
+            self.createTransformer(**config["transformer"]["params"])
+        else:
+            self.destroyTransformer()
+
+        # clipper
+        if "clipper" in config.keys():
+            self.createClipper(method=config["clipper"]["method"], 
+                **config["clipper"]["params"])
+        else:
+            self.destroyClipper()
+
+    def save_config(self, configpath):
+        with open(configpath, "w") as write_file:
+
+            config = {}
+            if self.transformer is not None:
+                settings = self.transformer.get_config()
+                config["transformer"] = settings
+
+            if self.clipper is not None:
+                settings = self.clipper.get_config()
+                config["clipper"] = settings
+
+            if self.bg_subtractor is not None:
+                settings = self.bg_subtractor.get_config()
+                config["bg_subtractor"] = settings
+
+            json.dump(config, write_file, indent=4)
+            print("Config saved to:\n{0}".format(configpath))
+
 
     #
     # I/O
@@ -101,10 +143,15 @@ class LidarProcessor():
     def destroyTransformer(self):
         self.transformer = None
 
-    def createTransformer(self, pts):
-            self.transformer = TrianglePlaneTransformer()
-            self.transformer.set_points(pts)
-            self.transformer.calculate_plane()
+    def createTransformer(self, points=None, **kwargs):
+            if points is not None:
+                self.transformer = PlaneTransformer()
+                self.transformer.get_plane_from_3_points(points)
+            elif "normal" in kwargs and "intercept" in kwargs:
+                self.transformer = PlaneTransformer(
+                    kwargs["normal"], kwargs["intercept"])
+            else:
+                ValueError("")
 
     def getPlaneCoeff(self):
         return self.transformer.get_plane_coeff()
@@ -126,5 +173,6 @@ class LidarProcessor():
 
     def destroyBgSubtractor(self):
         self.bg_subtractor = None
+
 
 

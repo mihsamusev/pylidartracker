@@ -130,3 +130,7 @@ dmypy.json
 
 # Visual Studio Code # 
 .vscode/ 
+
+# example folder for now
+.examples
+examples/

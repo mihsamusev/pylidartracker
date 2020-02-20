@@ -44,14 +44,20 @@ class XYTable(QtWidgets.QTableWidget):
         self.itemChanged.connect(self._updatedata)
 
 
-    def setRows(self, data):
-        pass
+    def setData(self, data):
+        if data is None:
+            self.setRowCount(1)
+            self.setStandardRow(0)
+        else:
+            self.setRowCount(len(data))
+            for i in range(self.rowCount()):
+                self.setStandardRow(i, data[i])
     
-    def setStandardRow(self, row):
+    def setStandardRow(self, row, xy=[0.0, 0.0]):
         self.setItem(row, 0, QtWidgets.QTableWidgetItem(
-            "{0:.{1}f}".format(0.0, self.decimals)))
+            "{0:.{1}f}".format(xy[0], self.decimals)))
         self.setItem(row, 1, QtWidgets.QTableWidgetItem(
-            "{0:.{1}f}".format(0.0, self.decimals)))
+            "{0:.{1}f}".format(xy[1], self.decimals)))
 
     def _addabove(self):
         selected = self.selectedIndexes()
@@ -140,9 +146,11 @@ class ThirdTabLoads(QtWidgets.QWidget):
         addy_layout.addWidget(addy_button)
         addy_layout.addWidget(self.addy_dsb)
 
+        set_button = QtWidgets.QPushButton("Set my data")
+        set_button.clicked.connect(self.setSomeData)
+
         buttonSpacerV = QtWidgets.QSpacerItem(
             20, 40, QtWidgets.QSizePolicy.Minimum,QtWidgets.QSizePolicy.Expanding)
-
 
         button_layout = QtWidgets.QVBoxLayout()
         button_layout.addWidget(addabove_button)
@@ -151,6 +159,7 @@ class ThirdTabLoads(QtWidgets.QWidget):
         button_layout.addWidget(get_button)
         button_layout.addLayout(addx_layout)
         button_layout.addLayout(addy_layout)
+        button_layout.addWidget(set_button)
         button_layout.addItem(buttonSpacerV)
 
         tablehbox = QtWidgets.QHBoxLayout()
@@ -172,6 +181,11 @@ class ThirdTabLoads(QtWidgets.QWidget):
     def addY(self):
         value = self.addy_dsb.value()
         self.table._add_y(value)
+
+    def setSomeData(self):
+        data = [[-13, 5.33],[8.4, 0.0],[-10, 33]]
+        data = None
+        self.table.setData(data)
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

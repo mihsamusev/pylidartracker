@@ -131,6 +131,29 @@ class ClippingDock(QtWidgets.QDockWidget):
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         self.mainLayoutV.addItem(self.bottomSpacerV)
 
+    def set_from_config(self, polygon, z_range, inverse):
+        
+        self.enableCropping.setChecked(True)
+        self.displayCropBox.setChecked(False)
+                
+        self.table.setData(polygon)
+        self.zMinBox.setValue(z_range[0])
+        self.zMaxBox.setValue(z_range[1])
+        self.addxDSB.setValue(1.0)
+        self.addyDSB.setValue(1.0)
+        self.inverseCropping.setChecked(inverse)
+
+    def reset(self):
+        self.enableCropping.setChecked(False)
+        self.displayCropBox.setChecked(False)
+
+        self.table.setData(None)
+        self.zMinBox.setValue(-1.0)
+        self.zMaxBox.setValue(1.0)
+        self.addxDSB.setValue(1.0)
+        self.addyDSB.setValue(1.0)
+        self.inverseCropping.setChecked(False)
+
     def _connectOwn(self):
         # enable / disable
         self.enableCropping.stateChanged.connect(self._toggleInput)

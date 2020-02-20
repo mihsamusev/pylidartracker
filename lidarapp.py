@@ -1,5 +1,7 @@
 import sys
+import json
 import numpy as np
+import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph.opengl as gl
 import ui.iconresource_rc
@@ -30,10 +32,31 @@ class LidarView(QtWidgets.QMainWindow):
         self._createTransformDock()
         self._createClippingDock()
         
+    def set_from_config(self, configpath):
+        with open(configpath, "r") as read_file:
+            config = json.load(read_file)
+
+            #self.graphicsView.init_from_config(config)
+
+            # call docks one by one
+            # transform dock
+            if "transformer" in config.keys():
+                self.transformDock.set_from_config(**config["transformer"]["params"])
+            else:
+                self.transformDock.reset()
+            
+            # clipping dock
+            if "clipper" in config.keys():
+                self.clippingDock.set_from_config(**config["clipper"]["params"])
+            else:
+                self.clippingDock.reset()
+            
     # TOOLBAR RELATED
     def _createToolBar(self):
         self.toolBar = QtWidgets.QToolBar(parent=self)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
+        self.toolBar.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+        self.toolBar.setMovable(False)
 
         # LOAD
         self.actionLoadPCAP = QtWidgets.QAction(parent=self)
@@ -100,15 +123,44 @@ class LidarView(QtWidgets.QMainWindow):
         self.frameSpinBox.setEnabled(False)
         self.toolBar.addWidget(self.frameSpinBox)
 
-    def getFileFromOpenDialog(self):
+    def getPCAPDialog(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open file','',"PCAP Files (*.pcap)")
+            self, 'Open File','',"PCAP Files (*.pcap)")
+        return fname[0]
+
+    def getJSONDialog(self):
+        fname = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open File','',"JSON Files (*.json)")
+        return fname[0]
+
+    def setJSONDialog(self):
+        fname = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save File','',"JSON Files (*.json)")
         return fname[0]
 
     # MENUBAR RELATED
     def _createMenuBar(self):
         self.menuBar = QtWidgets.QMenuBar(parent=self)
         self.setMenuBar(self.menuBar)
+
+        fileMenu = self.menuBar.addMenu('&File')
+
+        self.openFileMenu = QtWidgets.QAction('Load PCAP')
+        self.openFileMenu.setShortcut('Ctrl+O')
+        self.openFileMenu.setStatusTip('Load .pcap point cloud file')
+        fileMenu.addAction(self.openFileMenu)
+
+        self.loadConfigMenu = QtWidgets.QAction('Load config')
+        self.loadConfigMenu.setShortcut('Ctrl+L')
+        self.loadConfigMenu.setStatusTip('Load JSON project configuration file')
+        self.loadConfigMenu.setEnabled(False)
+        fileMenu.addAction(self.loadConfigMenu)
+
+        self.saveConfigMenu = QtWidgets.QAction('Save config')
+        self.saveConfigMenu.setShortcut('Ctrl+S')
+        self.saveConfigMenu.setStatusTip('Save JSON project configuration file')
+        self.saveConfigMenu.setEnabled(False)
+        fileMenu.addAction(self.saveConfigMenu)
 
     # STATUSBAR RELATED
     def _createStatusBar(self):
@@ -158,4 +210,18 @@ if __name__ == "__main__":
 
     model = LidarProcessor()
     ctrl = Controller(view=view, model=model)
+
+    # for debugging
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-p", "--pcap", default=None,
+        help="Path to the pcap file")
+    ap.add_argument("-f", "--framecount", default=50,
+        help="Path to the PCD file containing a background map.")
+    ap.add_argument("-c", "--config", default=None,
+        help="Path to JSON project config file")
+    args = vars(ap.parse_args())
+
+    if args["pcap"] is not None:
+        ctrl._loadFrames(args["pcap"], args["framecount"])
+
     sys.exit(app.exec())
