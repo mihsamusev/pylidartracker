@@ -20,6 +20,7 @@ class LidarProcessor():
         self.clipper = None
         
         self.bg_subtractor = None
+        self.bg_extractor = None
         self.backgroundFrame = None
 
     #
@@ -42,6 +43,13 @@ class LidarProcessor():
                 **config["clipper"]["params"])
         else:
             self.destroyClipper()
+
+        # background subtractor
+        if "background_subtractor" in config.keys():
+            # check if bg cloud is given
+            if config["background_subtractor"]
+        else:
+            self.destroyBgSubtractor()
 
     def save_config(self, configpath):
         with open(configpath, "w") as write_file:
@@ -166,9 +174,15 @@ class LidarProcessor():
         self.clipper = None
 
     #
-    # BG SUBTRACTOR
+    # BG SUBTRACTOR / EXTRACTOR
     #
-    def createSubtractor(self, bg_cloud, method, **kwargs):
+    def createBgExtractor(self, method, **kwargs):
+        pass
+
+    def destroyBgExtractor(self):
+        self.bg_extractor = None
+
+    def createBgSubtractor(self, bg_cloud, method, **kwargs):
         pass
 
     def destroyBgSubtractor(self):
