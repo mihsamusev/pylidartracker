@@ -5,6 +5,8 @@ from .pcapframeparser import PcapFrameParser
 from .framestream import FrameStream
 from .planetranformer import PlaneTransformer
 from .cloudclipper import CloudClipper
+from .backgroundextractor import BackgroundExtractor
+from .backgroundsubtractor import BackgroundSubtractor
 
 class LidarProcessor():
     def __init__(self):
@@ -45,10 +47,28 @@ class LidarProcessor():
             self.destroyClipper()
 
         # background subtractor
-        if "background_subtractor" in config.keys():
-            # check if bg cloud is given
-            if config["background_subtractor"]
+        # if bg subtractor is in config, initialize it:
+        if "0000background_subtractor" in config.keys():
+            # check if bg extractor or a cloud is configured
+            bgconfig = config["background_subtractor"]
+            # try to load cloud
+            bg_path = bgconfig["background"]["path"]
+            if os.path.exists(bg_path):
+                pass
+                # do stuff
+            else:
+                # if no path or invalid path, try to extract cloud
+                self.bg_extractor = BackgroundExtractor(
+                    **bgconfig["background"]["params"])
+                self.bg_extractor.extract(self._originalFrames)
+                self.backgroundFrame = self.bg_extractor.get_background()
+
+            # finally create bg subtractor
+            self.bg_subtractor = BackgroundSubtractor.factory(
+                method=bgconfig["method"], bg_cloud=self.backgroundFrame,
+                **bgconfig["params"])
         else:
+            self.destroyBgExtractor()
             self.destroyBgSubtractor()
 
     def save_config(self, configpath):

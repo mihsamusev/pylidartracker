@@ -1,13 +1,21 @@
-import pcl
 import numpy as np
-import pandas as pd
 from scipy.spatial import cKDTree
 from sklearn.neighbors import BallTree
 
-class BackgroundSubtractor:
-    def __init__(self, bgCloud, resolution):
-        self.bg = bgCloud
-        self.bgTree = BallTree(bgCloud.to_array(), leaf_size=10)
+class BackgroundSubtractor():
+    @staticmethod
+    def factory(method, bg_cloud, **kwargs):
+        if method == "kd_tree":
+            return KDTreeSubtractor(bg_cloud, **kwargs)
+        elif method == "octree":
+            return OctreeSubtractor(bg_cloud, **kwargs)
+        else:
+            ValueError(method)
+
+class OctreeSubtractor():
+    def __init__(self, bg_cloud, resolution):
+        self.bg = bg_cloud
+        self.bgTree = BallTree(bg_cloud.to_array(), leaf_size=10)
         p = pcl.PointCloud()
         self.cd = p.make_octreeChangeDetector(resolution)
     
@@ -16,7 +24,7 @@ class BackgroundSubtractor:
         data = np.vstack((x,y,z)).astype(np.float32).T
         return np.unique(data.round(decimals=4), axis=0)
 
-    def process(self, x, y, z):
+    def subtract(self, x, y, z):
         data = self.getArray(x,y,z)
         p = pcl.PointCloud(data)
         self.cd.delete_tree()
@@ -30,23 +38,44 @@ class BackgroundSubtractor:
         xNew, yNew, zNew = data[res].T
         return xNew,yNew,zNew
 
-    def process2(self, x, y, z, searchRadius=0.3):
+    def get_config(self):
+        return {
+            "method": "octree", 
+            "params": {
+                "background": "",
+                "resolution": self.resolution
+                }
+            }
+
+class KDTreeSubtractor():
+    def __init__(self, bg_cloud, search_radius=0.1):
+        self.bgTree = BallTree(bg_cloud.to_array(), leaf_size=10)
+        self.search_radius = search_radius
+
+    def getArray(self,x,y,z):
+        # this operation belogs to FrameStream thread
+        data = np.vstack((x,y,z)).astype(np.float32).T
+        return np.unique(data.round(decimals=4), axis=0)
+
+    def subtract(self, x, y, z):
         inputArray = self.getArray(x,y,z)
         counts = self.bgTree.query_radius(inputArray,
-            r=searchRadius, count_only=True)
+            r=self.search_radius, count_only=True)
         xNew, yNew, zNew = inputArray[counts==0].T
         return xNew, yNew, zNew
 
-    def dede(self):
-        from scipy.spatial import cKDTree
-        from Gui import Gui
-        import pcl
-        import numpy as np
-        gui = Gui()
+    def get_config(self):
+        return {
+            "method": "kdtree", 
+            "params": {
+                "background": "",
+                "rolerance": self.tolerance
+                }
+            }
 
-        # import back ground and a frame
-        bgCloud = pcl.load("./background_big.pcd")
-        bg = bgCloud.to_array()
+    def dede(bg):
+        from scipy.spatial import cKDTree
+
         frameCloud = pcl.load("../data/frame19020.pcd")
         frame = frameCloud.to_array()
 
@@ -60,10 +89,3 @@ class BackgroundSubtractor:
         idx = [i for i,x in enumerate(res) if not x]
         x,y,z = frameTree.data[idx].T
         xBg,yBg,zBg = bgTree.data.T
-        print("SHO?")
-        # Plot extracted background
-
-        gui.setGreenPoints([x,y,z])
-        gui.setBluePoints([xBg,yBg,zBg])
-        gui.draw()
-        gui.app.exec_()

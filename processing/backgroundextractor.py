@@ -1,7 +1,5 @@
 import numpy as np
 from copy import deepcopy
-from PcapParser import PcapParser
-from Gui import Gui
 
 class BackgroundExtractor:
     def __init__(self, percentile=80, non_zero=70, nFrames=100):
@@ -27,20 +25,20 @@ class BackgroundExtractor:
 
         # Find optimal range image height
         imgHeight = int(np.percentile(newSizes,5))
-        print("Optimal image height: ",imgHeight)
+        #print("Optimal image height: ",imgHeight)
         
         # Cut range image to size and prepare image stack
         stack = []
         for img in rangeImgs:
             if(img.shape[0] < imgHeight):
-                print("Frame ignored...")
+                #print("Frame ignored...")
                 continue            
             stack.append(img[:imgHeight,:])
         stacked = np.dstack(stack)
 
         # Calc percentile and apply non-zero check
-        bgDist = np.percentile(stacked,self.percentile,axis=2)
-        nonZero = np.count_nonzero(stacked,axis=2)
+        bgDist = np.percentile(stacked, self.percentile, axis=2)
+        nonZero = np.count_nonzero(stacked, axis=2)
         zeroMask = nonZero < len(frames)*(self.non_zero/100)
         bgDist[zeroMask] = 0
 
@@ -79,6 +77,9 @@ class BackgroundExtractor:
         data = np.vstack((x,y,z)).astype(np.float32).T
         self.background = data
         return data
+
+    def get_background(self):
+        return self.background
 
     def get_config(self):
         return {
