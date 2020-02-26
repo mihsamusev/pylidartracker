@@ -43,6 +43,12 @@ class Controller():
         self._view.clippingDock.applyButton.clicked.connect(
             self.applyClipping)
 
+        # background
+        self._view.actionBackground.triggered.connect(
+            self._view.showBackgroundDock)
+        self._view.backgroundDock.extractButton.clicked.connect(
+            self.extractBackground)
+
     #
     # I/O
     #
@@ -111,7 +117,6 @@ class Controller():
     #
     # PLANE FITTING AND TRANSFORM ACTON
     #
-
     def allowPointPicking(self):
         if self._view.transformDock.pickBtn.isChecked():
             # update dock
@@ -181,6 +186,31 @@ class Controller():
         self.updateGraphicsView()
 
     #
+    # BG EXTRACTION / SUBTRACTION
+    #
+    def extractBackground(self):
+        settings = self._view.backgroundDock.getSettings()
+        self._model.createBgExtractor(method=settings["background"]["method"],
+            **settings["background"]["params"])
+
+    def loadBackground(self):
+        pass
+
+    def saveBackground(self):
+        pass
+
+    def previewBackground(self):
+        pass
+
+    def applySubtraction(self):
+        settings = self._view.backgroundDock.getSettings()
+        if settings["subtract"]:
+            self._model.createBgSubtractor(settings["method"],settings["params"])
+            self._model.updatePreprocessed()
+        else:
+            self._model.destroyBgSubtractor()
+            self._model.updatePreprocessed()
+    #
     # UI UPDATES
     #
     def frameChanged(self, idx):
@@ -192,6 +222,7 @@ class Controller():
     def allowToolbarActions(self, enabled=True):
         self._view.actionTransform.setEnabled(enabled)
         self._view.actionClipping.setEnabled(enabled)
+        self._view.actionBackground.setEnabled(enabled)
         self._view.frameSlider.setEnabled(enabled)
         self._view.frameSpinBox.setEnabled(enabled)
 

@@ -12,6 +12,7 @@ class LidarProcessor():
     def __init__(self):
         self.filename = None
         self._originalFrames = []
+        self._timestamps = []
         self._preprocessedFrames = []
         self.bufferStarted = False
         self.frameGenerator = None
@@ -147,23 +148,26 @@ class LidarProcessor():
         # if clipper exists clip original background
 
         for (i, (ts, pts)) in enumerate(self._originalFrames):
-            # apply transformer
-            if self.transformer is not None:
-                pts = self.transformer.transform(pts)
-                print("[DEBUG] Transforming")
-                
-            # apply clipper
-            if self.clipper is not None:
-                pts = self.clipper.clip(pts)
-                print("[DEBUG] Clipping")
-            
-            # apply bg subtractor
-            if self.bg_subtractor is not None:
-                pts = self.bg_subtractor.subtract(pts)
-                print("[DEBUG] Subtracting")
+            # apply preporcessing to np array
+            pts = self.preprocessFrame(pts)
 
             # update preproc frames
             self._preprocessedFrames[i] = (ts, pts)
+
+    def preprocessFrame(self, arr):
+        # apply transformer
+        if self.transformer is not None:
+            arr = self.transformer.transform(arr)
+            
+        # apply clipper
+        if self.clipper is not None:
+            arr = self.clipper.clip(arr)
+
+        # apply bg subtractor
+        if self.bg_subtractor is not None:
+            arr = self.bg_subtractor.subtract(arr)
+
+        return arr
 
     #
     # PLANE ESTIMATION
@@ -197,10 +201,13 @@ class LidarProcessor():
     # BG SUBTRACTOR / EXTRACTOR
     #
     def createBgExtractor(self, method, **kwargs):
-        pass
+        self.bg_extractor = BackgroundExtractor(**kwargs)
+        self.bg_extractor.extract(self._originalFrames)
+        self.backgroundFrame = self.bg_extractor.get_background()
 
     def destroyBgExtractor(self):
         self.bg_extractor = None
+        self.backgroundFrame = None
 
     def createBgSubtractor(self, bg_cloud, method, **kwargs):
         pass

@@ -9,6 +9,7 @@ import ui.iconresource_rc
 from ui.transformdockui import TransformDock
 from ui.clippingdockui import ClippingDock
 from ui.lidargraphicsview import LidarGraphicsView
+from ui.backgrounddock import BackgroundDock
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
@@ -31,7 +32,8 @@ class LidarView(QtWidgets.QMainWindow):
         self._createGraphicsDisplay()
         self._createTransformDock()
         self._createClippingDock()
-        
+        self._createBackgroundDock()
+
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
             config = json.load(read_file)
@@ -86,14 +88,15 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionClipping.setEnabled(False)
         self.toolBar.addAction(self.actionClipping)
 
-        # EXTRACT
-        self.actionBGExtraction = QtWidgets.QAction(parent=self)
+        # Background
+        self.actionBackground = QtWidgets.QAction(parent=self)
+        self.actionBackground.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/bg_extraction.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.actionBGExtraction.setIcon(icon)
-        self.actionBGExtraction.setEnabled(False)
-        self.toolBar.addAction(self.actionBGExtraction)
+        self.actionBackground.setIcon(icon)
+        self.actionBackground.setEnabled(False)
+        self.toolBar.addAction(self.actionBackground)
 
         # CLUSTER
         self.actionCluster = QtWidgets.QAction(parent=self)
@@ -196,7 +199,20 @@ class LidarView(QtWidgets.QMainWindow):
             self.clippingDock.setVisible(False)
             self.clippingDock.setEnabled(False)
 
-    # GRAPHICS RELATED -> can be in its own classs
+    def _createBackgroundDock(self):
+        self.backgroundDock = BackgroundDock(parent=self)
+        self.backgroundDock.setVisible(False)
+        self.backgroundDock.setEnabled(False)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.backgroundDock)
+
+    def showBackgroundDock(self):
+        if not self.backgroundDock.isVisible():
+            self.backgroundDock.setVisible(True)
+            self.backgroundDock.setEnabled(True)
+        else:
+            self.backgroundDock.setVisible(False)
+            self.backgroundDock.setEnabled(False)
+
     def _createGraphicsDisplay(self):
         # setup main graphics window
         #self.graphicsView = gl.GLViewWidget()
@@ -215,7 +231,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("-p", "--pcap", default=None,
         help="Path to the pcap file")
-    ap.add_argument("-f", "--framecount", default=50,
+    ap.add_argument("-f", "--framecount", default=50, type=int,
         help="Path to the PCD file containing a background map.")
     ap.add_argument("-c", "--config", default=None,
         help="Path to JSON project config file")

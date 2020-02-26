@@ -2,12 +2,12 @@ import numpy as np
 from copy import deepcopy
 
 class BackgroundExtractor:
-    def __init__(self, percentile=80, non_zero=70, nFrames=100):
+    def __init__(self, percentile=80, non_zero=70, n_frames=100):
         self.numScanLines = 32
         self.frames = [1]
         self.percentile = percentile
         self.non_zero = non_zero
-        self.nFrames = nFrames
+        self.n_frames = n_frames
         self.background = None
 
     def reshape2scanlines(self, arr):
@@ -47,7 +47,7 @@ class BackgroundExtractor:
         ys = []
         zs = []
         for k,i in enumerate(self.frames):
-            if(k > self.nFrames):
+            if(k > self.n_frames):
                 break
             
             bgFrame = deepcopy(frames[i])
@@ -87,7 +87,8 @@ class BackgroundExtractor:
             "method": "range_image", 
             "params": {
                 "percentile": self.percentile,
-                "non_zero": self.non_zero
+                "non_zero": self.non_zero,
+                "n_frames": self.n_frames
                 }
             }
 
