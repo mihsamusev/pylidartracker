@@ -17,15 +17,13 @@ class LidarGraphicsView(gl.GLViewWidget):
             pos=self.rawPoints,color=self.rawColor,size=self.rawPtSize)
         self.addItem(self.rawCloud)
 
-        # estimated plane inliers
-        self.planePoints = np.zeros((1,3))
-        self.planeColor = np.zeros((1,3), dtype=np.float32)
-        self.planePtSize = 3
-        self.planeCloud = gl.GLScatterPlotItem(
-            pos=self.planePoints,color=self.planeColor,size=self.planePtSize)
-        self.addItem(self.planeCloud)
-
         # background cloud
+        self.bgPoints = np.zeros((1,3))
+        self.bgColor = (0.0, 0.0, 1.0, 0.0)
+        self.bgPtSize = 2
+        self.bgCloud = gl.GLScatterPlotItem(
+            pos=self.bgPoints,color=self.bgColor,size=self.bgPtSize)
+        self.addItem(self.bgCloud)
 
         # crop box outline, top polygon, bottom polygon, connections, node names
         self.cb_size = 2
@@ -148,6 +146,14 @@ class LidarGraphicsView(gl.GLViewWidget):
             self.selected[self.nSelected] = self.rawPoints[idx]
             self.nSelected += 1
 
+    def setBackgroundPoints(self, pts):
+        if pts is None:
+            self.bgPoints = np.zeros((1,3))
+            self.bgColor = (0.0, 0.0, 1.0, 0.0)
+        else:
+            self.bgPoints = pts
+            self.bgColor = (0.0, 0.0, 1.0, 1.0)
+
     def setRawPoints(self, pts):
         if pts is None:
             self.rawPoints = np.zeros((1,3))
@@ -178,6 +184,10 @@ class LidarGraphicsView(gl.GLViewWidget):
         #draw raw points
         self.rawCloud.setData(pos=self.rawPoints,
             color=self.rawColor,size=self.rawPtSize)
+        
+        #bg
+        self.bgCloud.setData(pos=self.bgPoints,
+            color=self.bgColor,size=self.bgPtSize)
         
         # draw crop box
         self.cb_top_poly_line.setData(pos=self.cb_top_poly,

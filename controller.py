@@ -49,6 +49,10 @@ class Controller():
         self._view.backgroundDock.extractButton.clicked.connect(
             self.extractBackground)
 
+        # quckie
+        self._view.backgroundDock.previewButton.stateChanged.connect(
+            self.previewBackground)
+
     #
     # I/O
     #
@@ -190,8 +194,11 @@ class Controller():
     #
     def extractBackground(self):
         settings = self._view.backgroundDock.getSettings()
-        self._model.createBgExtractor(method=settings["background"]["method"],
+        self._model.extractBackground(method=settings["background"]["method"],
             **settings["background"]["params"])
+
+        self._view.backgroundDock.extractedLabel.setText("Background extracted")
+        self._view.backgroundDock.previewButton.setEnabled(True)
 
     def loadBackground(self):
         pass
@@ -243,8 +250,18 @@ class Controller():
     #
     # GRAPHICS UPDATE
     #
+    def previewBackground(self):
+        if self._view.backgroundDock.previewButton.isChecked():
+            self._view.graphicsView.setBackgroundPoints(self._model.preprocessedBgArray)
+        else:
+            self._view.graphicsView.setBackgroundPoints(None)
+        self._view.graphicsView.draw()
+
+    def updateBackgroundPoints(self):
+        self._view.graphicsView.setBackgroundPoints(self._model.preprocessedBgArray)
+
     def updateRawPoints(self):
-        (ts, pts) = self._model.getFrame(self._currentFrameIdx)
+        pts = self._model.getArray(self._currentFrameIdx)
         if pts is None:
             return
         self._view.graphicsView.setRawPoints(pts)
@@ -261,4 +278,5 @@ class Controller():
 
     def updateGraphicsView(self):
         self.updateRawPoints()
+        self.updateBackgroundPoints()
         self._view.graphicsView.draw()

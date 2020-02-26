@@ -13,7 +13,7 @@ class LidarProcessor():
         self.filename = None
         self._originalFrames = []
         self._timestamps = []
-        self._preprocessedFrames = []
+        self._preprocessedArrays = []
         self.bufferStarted = False
         self.frameGenerator = None
         self.frameBuffer = None
@@ -24,7 +24,8 @@ class LidarProcessor():
         
         self.bg_subtractor = None
         self.bg_extractor = None
-        self.backgroundFrame = None
+        self.originalBgFrame = None
+        self.preprocessedBgArray = None
 
     #
     # LOAD/SAVE config
@@ -32,6 +33,9 @@ class LidarProcessor():
     def init_from_config(self, configpath):
         with open(configpath, "r") as read_file:
             config = json.load(read_file)
+
+        # need validator for the config file to check if all necessary fields
+        # are there and spelled correctly
 
         # call processors one by one
         # transformer
@@ -62,7 +66,7 @@ class LidarProcessor():
                 self.bg_extractor = BackgroundExtractor(
                     **bgconfig["background"]["params"])
                 self.bg_extractor.extract(self._originalFrames)
-                self.backgroundFrame = self.bg_extractor.get_background()
+                self.backgroundArray = self.bg_extractor.get_background()
 
             # finally create bg subtractor
             self.bg_subtractor = BackgroundSubtractor.factory(
@@ -113,9 +117,12 @@ class LidarProcessor():
         self._originalFrames = []
         for i in range(N):
             (ts, f) = self.readNextFrame()
+            self._timestamps.append(ts)
+            self._originalFrames.append(f)
+
+            # preprocessed frames are the cartesian xyz arrays
             pts = self.arrayFromFrame(f)
-            self._originalFrames.append((ts, pts))
-        self._preprocessedFrames = copy.deepcopy(self._originalFrames)
+            self._preprocessedArrays.append(pts)
 
     def readNextFrame(self):
         try:
@@ -124,12 +131,11 @@ class LidarProcessor():
             out = (None, None)
         return out
 
-    def getFrame(self,frameID):
-        return self._preprocessedFrames[frameID]
+    def getTimestamp(self, frameID):
+        return self._timestamps[frameID]
 
-    def revertToOriginal(self):
-        # do nothing if clouds have not even been transformed
-        self._preprocessedFrames = copy.deepcopy(self._originalFrames)
+    def getArray(self,frameID):
+        return self._preprocessedArrays[frameID]
 
     def arrayFromFrame(self, frame):
         x,y,z = frame.getCartesian()
@@ -140,21 +146,21 @@ class LidarProcessor():
     # PREPROCESSING
     #
     def updatePreprocessed(self):
-        # update plane and background
+        # ensure the subtractor is initiated with the correct
+        # background point cloud
+        if self.originalBgFrame is not None:
+            pts = self.arrayFromFrame(self.originalBgFrame)
+            self.preprocessedBgArray = self.preprocessArray(pts)
+            #self.bg_subtractor.set_background(self.preprocessedBgArray)
 
         # update preprocessed points
-        # if transformer exists and HMMMM reakky? transform background
+        self._preprocessedArrays = []
+        for (i, frame) in enumerate(self._originalFrames):
+            pts = self.arrayFromFrame(frame)
+            pts = self.preprocessArray(pts)
+            self._preprocessedArrays.append(pts)
 
-        # if clipper exists clip original background
-
-        for (i, (ts, pts)) in enumerate(self._originalFrames):
-            # apply preporcessing to np array
-            pts = self.preprocessFrame(pts)
-
-            # update preproc frames
-            self._preprocessedFrames[i] = (ts, pts)
-
-    def preprocessFrame(self, arr):
+    def preprocessArray(self, arr):
         # apply transformer
         if self.transformer is not None:
             arr = self.transformer.transform(arr)
@@ -200,14 +206,18 @@ class LidarProcessor():
     #
     # BG SUBTRACTOR / EXTRACTOR
     #
-    def createBgExtractor(self, method, **kwargs):
+    def extractBackground(self, method, **kwargs):
         self.bg_extractor = BackgroundExtractor(**kwargs)
         self.bg_extractor.extract(self._originalFrames)
-        self.backgroundFrame = self.bg_extractor.get_background()
+        self.originalBgFrame = self.bg_extractor.get_background()
+
+        # really here?
+        pts = self.arrayFromFrame(self.originalBgFrame)
+        self.preprocessedBgArray = self.preprocessArray(pts)
 
     def destroyBgExtractor(self):
         self.bg_extractor = None
-        self.backgroundFrame = None
+        self.backgroundArray = None
 
     def createBgSubtractor(self, bg_cloud, method, **kwargs):
         pass

@@ -115,7 +115,8 @@ class BackgroundDock(QtWidgets.QDockWidget):
         spacer = QtWidgets.QSpacerItem(
             40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         extractLayoutH4.addItem(spacer)
-        self.previewButton = QtWidgets.QPushButton("Preview")
+        self.previewButton = QtWidgets.QCheckBox("Display background")
+        self.previewButton.setEnabled(False)
         extractLayoutH4.addWidget(self.previewButton)
         groupLayoutV1.addLayout(extractLayoutH4)
 
