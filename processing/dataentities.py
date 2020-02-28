@@ -109,3 +109,23 @@ class Frame:
         self.distance = self.distance[:self.i]
         self.intensity = self.intensity[:self.i]
         return self
+
+    def save_csv(self, filename):
+        # stack everything and save as CSV
+        stacked = np.column_stack(
+            (self.id, self.elevation, self.azimuth, self.distance, self.intensity))
+        header = "id,elevation,azimuth,distance,intensity"
+        fmt = ["%-10d","%-10.5f","%-10.5f","%-10.5f","%-10.5f"]
+        np.savetxt(filename, stacked, delimiter="", header=header, fmt=fmt)
+
+    def load_csv(self, filename):
+        with open(filename, "r") as read_file:
+            i, elev, az, dist, ints = np.loadtxt(
+            read_file, delimiter=None, skiprows=1, unpack=True, max_rows=70000)
+
+        self.id = i
+        self.elevation = elev
+        self.azimuth = az
+        self.distance = dist
+        self.intensity = ints
+        self.radiansCheck()

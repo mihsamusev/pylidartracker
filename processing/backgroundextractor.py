@@ -52,13 +52,20 @@ class BackgroundExtractor:
         bgFrame.elevation = self.reshape2scanlines(bgFrame.elevation)[1]
         bgFrame.elevation = bgFrame.elevation[:imgHeight,:].flatten()
 
+        bgFrame.intensity = self.reshape2scanlines(bgFrame.intensity)[1]
+        bgFrame.intensity = bgFrame.intensity[:imgHeight,:].flatten()
+        bgFrame.id = self.reshape2scanlines(bgFrame.id)[1]
+        bgFrame.id = bgFrame.id[:imgHeight,:].flatten()
+
+        bgFrame.aziRad = np.deg2rad(bgFrame.azimuth)
+        bgFrame.eleRad = np.deg2rad(bgFrame.elevation)
+        
         if self.cartesian:
             # Convert to cartesian coordinates
-            aziRad = np.deg2rad(bgFrame.azimuth)
-            eleRad = np.deg2rad(bgFrame.elevation)
+
             x = (bgFrame.distance * np.cos(eleRad) * np.sin(aziRad))
             y = (bgFrame.distance * np.cos(eleRad) * np.cos(aziRad))
-            z = (bgFrame.distance * np.sin(eleRad)).flatten()
+            z = (bgFrame.distance * np.sin(eleRad))
 
             data = np.vstack((x,y,z)).astype(np.float32).T
             self.background = data

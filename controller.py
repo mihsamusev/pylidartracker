@@ -48,7 +48,8 @@ class Controller():
             self._view.showBackgroundDock)
         self._view.backgroundDock.extractButton.clicked.connect(
             self.extractBackground)
-
+        self._view.backgroundDock.loadButton.clicked.connect(self.loadBackground)
+        self._view.backgroundDock.saveButton.clicked.connect(self.saveBackground)
         # quckie
         self._view.backgroundDock.previewButton.stateChanged.connect(
             self.previewBackground)
@@ -197,17 +198,24 @@ class Controller():
         self._model.extractBackground(method=settings["background"]["method"],
             **settings["background"]["params"])
 
+        self._view.backgroundDock.savedLabel.setText("Background not saved")
         self._view.backgroundDock.extractedLabel.setText("Background extracted")
         self._view.backgroundDock.previewButton.setEnabled(True)
 
     def loadBackground(self):
-        pass
+        bgpath = self._view.backgroundDock.getCSVDialog()
+        if not bgpath:
+            return
+        self._model.loadBackground(bgpath)
+        self._view.backgroundDock.loadLabel.setText("Background loaded")
+        self._view.backgroundDock.previewButton.setEnabled(True)
 
     def saveBackground(self):
-        pass
-
-    def previewBackground(self):
-        pass
+        bgpath = self._view.backgroundDock.setCSVDialog()
+        if not bgpath:
+            return
+        self._model.saveBackground(bgpath)
+        self._view.backgroundDock.savedLabel.setText("Background saved")
 
     def applySubtraction(self):
         settings = self._view.backgroundDock.getSettings()

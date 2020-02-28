@@ -220,13 +220,6 @@ class LidarView(QtWidgets.QMainWindow):
         self.mainLayout.addWidget(self.graphicsView)
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
-    view = LidarView()
-    view.show()
-
-    model = LidarProcessor()
-    ctrl = Controller(view=view, model=model)
-
     # for debugging
     ap = argparse.ArgumentParser()
     ap.add_argument("-p", "--pcap", default=None,
@@ -236,6 +229,13 @@ if __name__ == "__main__":
     ap.add_argument("-c", "--config", default=None,
         help="Path to JSON project config file")
     args = vars(ap.parse_args())
+
+    app = QtWidgets.QApplication(sys.argv)
+    view = LidarView()
+    view.show()
+
+    model = LidarProcessor()
+    ctrl = Controller(view=view, model=model)
 
     if args["pcap"] is not None:
         ctrl._loadFrames(args["pcap"], args["framecount"])

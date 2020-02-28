@@ -164,8 +164,6 @@ class BackgroundDock(QtWidgets.QDockWidget):
         self.enableSubtraction.stateChanged.connect(self.checkSubtraction)
         self.loadBackground.toggled.connect(self.toggleLoading)
         self.extractBackground.toggled.connect(self.toggleExtraction)
-        self.loadButton.clicked.connect(self.getPCDDialog)
-        self.saveButton.clicked.connect(self.setPCDDialog)
 
     def checkSubtraction(self):
         state = self.enableSubtraction.isChecked()
@@ -195,15 +193,14 @@ class BackgroundDock(QtWidgets.QDockWidget):
         self.radiusLabel.setEnabled(state)
         self.applyButton.setEnabled(state)
 
-    def getPCDDialog(self):
+    def getCSVDialog(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open File','',"PCD Files (*.pcd)")
-        self.loadedFile = fname[0]
-        print("[DEBUG] ",fname[0])
+            self, 'Open File','',"CSV Files (*.csv)")
+        return fname[0]
 
-    def setPCDDialog(self):
+    def setCSVDialog(self):
         fname = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Save File','',"JSON Files (*.pcd)")
+            self, 'Save File','',"CSV Files (*.csv)")
         return fname[0]
 
     def getSettings(self):

@@ -7,6 +7,7 @@ from .planetranformer import PlaneTransformer
 from .cloudclipper import CloudClipper
 from .backgroundextractor import BackgroundExtractor
 from .backgroundsubtractor import BackgroundSubtractor
+from .dataentities import Frame
 
 class LidarProcessor():
     def __init__(self):
@@ -206,12 +207,23 @@ class LidarProcessor():
     #
     # BG SUBTRACTOR / EXTRACTOR
     #
+    def saveBackground(self, filename):
+        if self.originalBgFrame is not None:
+            self.originalBgFrame.save_csv(filename)
+
+    def loadBackground(self, filename):
+        self.bg_extractor = None
+        self.originalBgFrame = Frame()
+        self.originalBgFrame.load_csv(filename)
+        
+        pts = self.arrayFromFrame(self.originalBgFrame)
+        self.preprocessedBgArray = self.preprocessArray(pts)
+
     def extractBackground(self, method, **kwargs):
         self.bg_extractor = BackgroundExtractor(**kwargs)
         self.bg_extractor.extract(self._originalFrames)
         self.originalBgFrame = self.bg_extractor.get_background()
-
-        # really here?
+        #
         pts = self.arrayFromFrame(self.originalBgFrame)
         self.preprocessedBgArray = self.preprocessArray(pts)
 
