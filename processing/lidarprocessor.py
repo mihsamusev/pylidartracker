@@ -1,6 +1,7 @@
 import copy
 import json
 import numpy as np
+import time
 from .pcapframeparser import PcapFrameParser
 from .framestream import FrameStream
 from .planetranformer import PlaneTransformer
@@ -89,9 +90,13 @@ class LidarProcessor():
                 settings = self.clipper.get_config()
                 config["clipper"] = settings
 
+            if self.bg_extractor is not None:
+                settings = self.bg_extractor.get_config()
+                config["background"]["extractor"] = settings
+
             if self.bg_subtractor is not None:
                 settings = self.bg_subtractor.get_config()
-                config["bg_subtractor"] = settings
+                config["background"]["subtractor"] = settings
 
             json.dump(config, write_file, indent=4)
             print("Config saved to:\n{0}".format(configpath))
@@ -141,6 +146,7 @@ class LidarProcessor():
     def arrayFromFrame(self, frame):
         x,y,z = frame.getCartesian()
         pts = np.vstack((x,y,z)).astype(np.float32).T
+        pts = self.removeZeros(pts)
         return pts
 
     # 
@@ -151,15 +157,22 @@ class LidarProcessor():
         # background point cloud
         if self.originalBgFrame is not None:
             pts = self.arrayFromFrame(self.originalBgFrame)
-            self.preprocessedBgArray = self.preprocessArray(pts)
-            #self.bg_subtractor.set_background(self.preprocessedBgArray)
+            self.preprocessedBgArray = self.preprocessBg(pts)
+            if self.bg_subtractor is not None:
+                self.bg_subtractor.set_background(self.preprocessedBgArray)
 
         # update preprocessed points
         self._preprocessedArrays = []
         for (i, frame) in enumerate(self._originalFrames):
+            start = time.time()
             pts = self.arrayFromFrame(frame)
             pts = self.preprocessArray(pts)
             self._preprocessedArrays.append(pts)
+
+            # timing
+            print(f"[DEBUG] pre-processing frame{i+1}/{len(self._originalFrames)} in {time.time() - start} s")
+
+
 
     def preprocessArray(self, arr):
         # apply transformer
@@ -176,6 +189,19 @@ class LidarProcessor():
 
         return arr
 
+    def preprocessBg(self, arr):
+        # apply transformer
+        if self.transformer is not None:
+            arr = self.transformer.transform(arr)
+            
+        # apply clipper
+        if self.clipper is not None:
+            arr = self.clipper.clip(arr)
+
+        return arr
+
+    def removeZeros(self, arr):
+        return arr[np.all(arr, axis=1)]
     #
     # PLANE ESTIMATION
     #
@@ -229,10 +255,12 @@ class LidarProcessor():
 
     def destroyBgExtractor(self):
         self.bg_extractor = None
-        self.backgroundArray = None
+        self.originalBgFrame = None
+        self.preprocessedBgArray = None
 
-    def createBgSubtractor(self, bg_cloud, method, **kwargs):
-        pass
+    def createBgSubtractor(self, method, **kwargs):
+        if self.originalBgFrame is not None:
+            self.bg_subtractor = BackgroundSubtractor.factory(method, **kwargs)
 
     def destroyBgSubtractor(self):
         self.bg_subtractor = None

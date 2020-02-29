@@ -4,11 +4,11 @@ from sklearn.neighbors import BallTree
 
 class BackgroundSubtractor():
     @staticmethod
-    def factory(method, bg_cloud, **kwargs):
+    def factory(method, **kwargs):
         if method == "kd_tree":
-            return KDTreeSubtractor(bg_cloud, **kwargs)
+            return KDTreeSubtractor(**kwargs)
         elif method == "octree":
-            return OctreeSubtractor(bg_cloud, **kwargs)
+            return OctreeSubtractor(**kwargs)
         else:
             ValueError(method)
 
@@ -48,44 +48,39 @@ class OctreeSubtractor():
             }
 
 class KDTreeSubtractor():
-    def __init__(self, bg_cloud, search_radius=0.1):
-        self.bgTree = BallTree(bg_cloud.to_array(), leaf_size=10)
+    def __init__(self, bg_cloud=None, search_radius=0.1):
+        self.bg_cloud = bg_cloud
+        
+        self.bgTree = None
+        if self.bg_cloud is not None:
+            self.bgTree = BallTree(bg_cloud, leaf_size=10)
+
         self.search_radius = search_radius
 
-    def getArray(self,x,y,z):
-        # this operation belogs to FrameStream thread
-        data = np.vstack((x,y,z)).astype(np.float32).T
-        return np.unique(data.round(decimals=4), axis=0)
+    def set_background2(self, bg_cloud):
+        self.bg_cloud = bg_cloud
+        self.bgTree = cKDTree(bg_cloud)
 
-    def subtract(self, x, y, z):
-        inputArray = self.getArray(x,y,z)
-        counts = self.bgTree.query_radius(inputArray,
+    def set_background(self, bg_cloud):
+        self.bg_cloud = bg_cloud
+        self.bgTree = BallTree(bg_cloud, leaf_size=10)
+
+    def subtract2(self, arr):
+        arrayTree = cKDTree(arr)
+        res = arrayTree.query_ball_tree(
+            self.bgTree, r=self.search_radius)
+        idx = [i for i,x in enumerate(res) if not x]
+        return arrayTree.data[idx]
+
+    def subtract(self, arr):
+        counts = self.bgTree.query_radius(arr,
             r=self.search_radius, count_only=True)
-        xNew, yNew, zNew = inputArray[counts==0].T
-        return xNew, yNew, zNew
+        return arr[counts==0]
 
     def get_config(self):
         return {
-            "method": "kdtree", 
+            "method": "kd_tree", 
             "params": {
-                "background": "",
-                "rolerance": self.tolerance
+                "search_radius": self.search_radius
                 }
             }
-
-    def dede(bg):
-        from scipy.spatial import cKDTree
-
-        frameCloud = pcl.load("../data/frame19020.pcd")
-        frame = frameCloud.to_array()
-
-        # make sure there are no identical values (like zeros or nans)
-        # to avoid segfault
-        bg = np.unique(bg.round(decimals=4), axis=0)
-        bgTree = cKDTree(bg)
-        frameTree = cKDTree(frame)
-
-        res = frameTree.query_ball_tree(bgTree, r=0.2)
-        idx = [i for i,x in enumerate(res) if not x]
-        x,y,z = frameTree.data[idx].T
-        xBg,yBg,zBg = bgTree.data.T

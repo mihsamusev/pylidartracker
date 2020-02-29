@@ -1,4 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+import os
 
 class BackgroundDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
@@ -10,7 +11,6 @@ class BackgroundDock(QtWidgets.QDockWidget):
         self.connectOwnButtons()
         self.toggleLoading()
         self.toggleExtraction()
-        self.allowBgSubtraction(False)
 
     def initView(self):
         self.setWindowTitle("Background subtraction")
@@ -24,14 +24,9 @@ class BackgroundDock(QtWidgets.QDockWidget):
         self.setWidget(centralWidget)
         mainLayoutV = QtWidgets.QVBoxLayout(centralWidget)
 
-        # toggle button here
-        self.enableSubtraction = QtWidgets.QCheckBox("Enable background subtraction")
-        mainLayoutV.addWidget(self.enableSubtraction)
-
         # group box 1 - background pc
         self.groupBox1 = QtWidgets.QGroupBox()
         self.groupBox1.setTitle("Background point cloud")
-        self.groupBox1.setEnabled(False)
         mainLayoutV.addWidget(self.groupBox1)
         groupLayoutV1 = QtWidgets.QVBoxLayout(self.groupBox1)
 
@@ -44,8 +39,8 @@ class BackgroundDock(QtWidgets.QDockWidget):
         loadLayoutH1 = QtWidgets.QHBoxLayout()
         self.loadButton = QtWidgets.QPushButton("Load")
         loadLayoutH1.addWidget(self.loadButton)
-        self.loadLabel = QtWidgets.QLabel("Background not loaded")
-        loadLayoutH1.addWidget(self.loadLabel)
+        self.loadedLabel = QtWidgets.QLabel("")
+        loadLayoutH1.addWidget(self.loadedLabel)
         spacer = QtWidgets.QSpacerItem(
             40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         loadLayoutH1.addItem(spacer)
@@ -120,6 +115,10 @@ class BackgroundDock(QtWidgets.QDockWidget):
         extractLayoutH4.addWidget(self.previewButton)
         groupLayoutV1.addLayout(extractLayoutH4)
 
+        # toggle button here
+        self.enableSubtraction = QtWidgets.QCheckBox("Enable background subtraction")
+        mainLayoutV.addWidget(self.enableSubtraction)
+
         # group box 2 - background subtractor
         self.groupBox2 = QtWidgets.QGroupBox()
         self.groupBox2.setTitle("Background subtractor")
@@ -127,7 +126,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
         mainLayoutV.addWidget(self.groupBox2)
         groupLayoutV2 = QtWidgets.QVBoxLayout(self.groupBox2)
 
-        # percentile
+        # search radius
         subtractLayoutH1 = QtWidgets.QHBoxLayout()
         self.radiusLabel = QtWidgets.QLabel("KD-tree search radius")
         subtractLayoutH1.addWidget(self.radiusLabel)
@@ -147,33 +146,66 @@ class BackgroundDock(QtWidgets.QDockWidget):
         applyLayoutH.addItem(applySpacerH)
         self.applyButton = QtWidgets.QPushButton("Apply")
         applyLayoutH.addWidget(self.applyButton)
-        groupLayoutV2.addLayout(applyLayoutH)
+        mainLayoutV.addLayout(applyLayoutH)
 
         # bottom spacer
         bottomSpacerV = QtWidgets.QSpacerItem(20, 40, 
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding)
         mainLayoutV.addItem(bottomSpacerV)
 
-    def set_from_config(self, **kwargs):
-        self.enableSubtraction.setChecked(True)
+    def set_from_config(self, path=None, extractor=None, subtractor=None):
+
+        validPath = path is not None and os.path.isfile(path)
+        if validPath:
+            self.loadBackground.setChecked(True)
+            self.loadedLabel.setText("Background loaded from file")
+        else:
+            self.loadBackground.setChecked(False)
+            self.loadedLabel.setText("")
+            self.enableSubtraction.setChecked(False)
+
+        if extractor is not None:
+            self.extractBackground.setChecked(True)
+            self.percentileBox.setValue(extractor["params"]["percentile"])
+            self.nonzeroBox.setValue(extractor["params"]["non_zero"])
+            self.nFramesBox.setValue(extractor["params"]["n_frames"])
+            self.extractedLabel.setText("Background is extracted")
+            self.savedLabel.setText("Background not saved")
+        else:
+            self.loadBackground.setChecked(True)
+            self.loadedLabel.setText("Background not loaded")
+
+        if validPath or extractor is not None:
+            self.previewButton.setEnabled(True)
+            if subtractor is not None:
+                self.enableSubtraction.setChecked(True)
+                self.radiusBox.setValue(subtractor["params"]["search_radius"])
+            else:
+                self.enableSubtraction.setChecked(False)
+        else:
+            self.groupBox2.setEnabled(False)
+
 
     def reset(self):
+        self.loadBackground.setChecked(True)
+        self.loadedLabel.setText("Background not loaded")
+        self.extractedLabel.setText("Background not extracted")
+        self.savedLabel.setText("Background not saved")
         self.enableSubtraction.setChecked(False)
 
     def connectOwnButtons(self):
-        self.enableSubtraction.stateChanged.connect(self.checkSubtraction)
+        self.enableSubtraction.stateChanged.connect(self.toggleSubtraction)
         self.loadBackground.toggled.connect(self.toggleLoading)
         self.extractBackground.toggled.connect(self.toggleExtraction)
 
-    def checkSubtraction(self):
+    def toggleSubtraction(self):
         state = self.enableSubtraction.isChecked()
-        self.groupBox1.setEnabled(state)
         self.groupBox2.setEnabled(state)
 
     def toggleLoading(self):
         state = self.loadBackground.isChecked()
         self.loadButton.setEnabled(state)
-        self.loadLabel.setEnabled(state)
+        self.loadedLabel.setEnabled(state)
 
     def toggleExtraction(self):
         state = self.extractBackground.isChecked()
@@ -188,11 +220,6 @@ class BackgroundDock(QtWidgets.QDockWidget):
         self.extractedLabel.setEnabled(state)
         self.savedLabel.setEnabled(state)
 
-    def allowBgSubtraction(self, state):
-        self.radiusBox.setEnabled(state)
-        self.radiusLabel.setEnabled(state)
-        self.applyButton.setEnabled(state)
-
     def getCSVDialog(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open File','',"CSV Files (*.csv)")
@@ -205,21 +232,22 @@ class BackgroundDock(QtWidgets.QDockWidget):
 
     def getSettings(self):
         settings = {
-            "subtract": self.enableSubtraction.isChecked(),
-            "method": "kd-tree",
+        "path": "",
+        "extractor":{
+            "method":"range_image",
+            "params":{
+                "percentile": self.percentileBox.value(),
+                "non_zero": self.nonzeroBox.value(),
+                "n_frames": self.nFramesBox.value()
+            }
+        },
+        "subtractor":{
+            "method":"kd_tree",
             "params": {
                 "search_radius": self.radiusBox.value()
-                },
-            "background": {
-                "path": self.loadedFile,
-                "method": "range_image",
-                "params": {
-                    "percentile": self.percentileBox.value(),
-                    "non_zero": self.nonzeroBox.value(),
-                    "n_frames": self.nFramesBox.value()
-                }
             }
         }
+    }
         return settings
 
 if __name__ == '__main__':

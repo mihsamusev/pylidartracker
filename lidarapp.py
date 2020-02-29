@@ -52,6 +52,15 @@ class LidarView(QtWidgets.QMainWindow):
                 self.clippingDock.set_from_config(**config["clipper"]["params"])
             else:
                 self.clippingDock.reset()
+
+            if "background" in config.keys():
+                # TODO: check that it contains "path, extractor, subtractor",
+                # otherwise reject and throw warning that bg information
+                self.backgroundDock.set_from_config(**config["background"])
+            else:
+                self.backgroundDock.reset()
+
+            
             
     # TOOLBAR RELATED
     def _createToolBar(self):

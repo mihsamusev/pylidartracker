@@ -53,6 +53,8 @@ class Controller():
         # quckie
         self._view.backgroundDock.previewButton.stateChanged.connect(
             self.previewBackground)
+        self._view.backgroundDock.applyButton.clicked.connect(
+            self.applySubtraction)
 
     #
     # I/O
@@ -195,8 +197,8 @@ class Controller():
     #
     def extractBackground(self):
         settings = self._view.backgroundDock.getSettings()
-        self._model.extractBackground(method=settings["background"]["method"],
-            **settings["background"]["params"])
+        self._model.extractBackground(method=settings["extractor"]["method"],
+            **settings["extractor"]["params"])
 
         self._view.backgroundDock.savedLabel.setText("Background not saved")
         self._view.backgroundDock.extractedLabel.setText("Background extracted")
@@ -207,7 +209,7 @@ class Controller():
         if not bgpath:
             return
         self._model.loadBackground(bgpath)
-        self._view.backgroundDock.loadLabel.setText("Background loaded")
+        self._view.backgroundDock.loadedLabel.setText("Background loaded")
         self._view.backgroundDock.previewButton.setEnabled(True)
 
     def saveBackground(self):
@@ -219,12 +221,16 @@ class Controller():
 
     def applySubtraction(self):
         settings = self._view.backgroundDock.getSettings()
-        if settings["subtract"]:
-            self._model.createBgSubtractor(settings["method"],settings["params"])
+        if self._view.backgroundDock.enableSubtraction.isChecked():
+            self._model.createBgSubtractor(method=settings["subtractor"]["method"],
+            **settings["subtractor"]["params"])
             self._model.updatePreprocessed()
         else:
             self._model.destroyBgSubtractor()
             self._model.updatePreprocessed()
+
+        #update view and status bar
+        self.updateGraphicsView()
     #
     # UI UPDATES
     #
@@ -259,14 +265,14 @@ class Controller():
     # GRAPHICS UPDATE
     #
     def previewBackground(self):
+        self.updateBackgroundPoints()
+        self._view.graphicsView.draw()
+
+    def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():
             self._view.graphicsView.setBackgroundPoints(self._model.preprocessedBgArray)
         else:
             self._view.graphicsView.setBackgroundPoints(None)
-        self._view.graphicsView.draw()
-
-    def updateBackgroundPoints(self):
-        self._view.graphicsView.setBackgroundPoints(self._model.preprocessedBgArray)
 
     def updateRawPoints(self):
         pts = self._model.getArray(self._currentFrameIdx)
