@@ -56,6 +56,9 @@ class Controller():
         self._view.backgroundDock.applyButton.clicked.connect(
             self.applySubtraction)
 
+        # clusteirng
+        self._view.actionCluster.triggered.connect(self.applyClustering)
+
     #
     # I/O
     #
@@ -232,6 +235,17 @@ class Controller():
         #update view and status bar
         self.updateGraphicsView()
     #
+    # CLUSTERING
+    #
+    def applyClustering(self):
+        settings = {
+            "search_radius": 0.2,
+            "dimensions": 3,
+            "min_samples": 20,
+            "multiprocess": False}
+        self._model.extractClusters(method="dbscan", **settings)
+        self.updateClusters()
+    #
     # UI UPDATES
     #
     def frameChanged(self, idx):
@@ -267,6 +281,12 @@ class Controller():
     def previewBackground(self):
         self.updateBackgroundPoints()
         self._view.graphicsView.draw()
+
+    def updateClusters(self):
+        clusters = self._model.getClusters(self._currentFrameIdx)
+        print(f"Found {len(clusters)}")
+        for i, c in enumerate(clusters):
+            print(f" cluster {i} with {c.size} points")
 
     def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():

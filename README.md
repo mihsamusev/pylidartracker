@@ -23,3 +23,10 @@ Coming soon
 * add continuous integration
 * extend choice of pre and post-processing algorithms (bg subtraction, clustering, tracking etc.)
 
+# Known bugs / errors
+* On close there is no dial window asking if you want to save current config
+* On loading new file there is no change in config
+*
+*
+*
+

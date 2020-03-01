@@ -9,6 +9,7 @@ from .cloudclipper import CloudClipper
 from .backgroundextractor import BackgroundExtractor
 from .backgroundsubtractor import BackgroundSubtractor
 from .dataentities import Frame
+from .clusterer import Clusterer
 
 class LidarProcessor():
     def __init__(self):
@@ -30,6 +31,8 @@ class LidarProcessor():
         self.originalBgFrame = None
         self.preprocessedBgArray = None
 
+        self.clusterer = None
+        self.frameClusters = []
     #
     # LOAD/SAVE config
     #
@@ -278,5 +281,21 @@ class LidarProcessor():
     def destroyBgSubtractor(self):
         self.bg_subtractor = None
 
+    #
+    # CLUSTERER
+    #
+    def getClusters(self, frameID):
+        return self.frameClusters[frameID]
 
+    def extractClusters(self, method, **kwargs):
+        self.clusterer = Clusterer.factory(method, **kwargs)
+        self.frameClusters = []
+        for i, arr in enumerate(self._preprocessedArrays):
+            clusters = self.clusterer.cluster(arr)
+            self.frameClusters.append(clusters)
+            print(f"[DEBUG][CLUSTERING] got {len(clusters)}clusters for frame {i}")
+
+    def destroyClusterer(self):
+        self.frameClusters = []
+        self.clusterer = None
 

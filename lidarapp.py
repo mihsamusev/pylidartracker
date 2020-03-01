@@ -78,6 +78,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.toolBar.addAction(self.actionLoadPCAP)
         
         # TRANSFORM
+        self.toolBar.addSeparator()
         self.actionTransform = QtWidgets.QAction(parent=self)
         self.actionTransform.setCheckable(True)
         icon = QtGui.QIcon()
@@ -108,12 +109,13 @@ class LidarView(QtWidgets.QMainWindow):
         self.toolBar.addAction(self.actionBackground)
 
         # CLUSTER
+        self.toolBar.addSeparator()
         self.actionCluster = QtWidgets.QAction(parent=self)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCluster.setIcon(icon)
-        self.actionCluster.setEnabled(False)
+        self.actionCluster.setEnabled(True)
         self.toolBar.addAction(self.actionCluster)
 
         # TRACK
