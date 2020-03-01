@@ -3,6 +3,7 @@ from .dataentities import Packet,LaserFiring,Frame
 
 class PcapFrameParser:
     def __init__(self, pcapFile):
+        # check if PCAP file is really .pcap
         self.packetStream = dpkt.pcap.Reader(open(pcapFile, 'rb'))
         self.frameCount = 0
         self.lastAzi = -1
@@ -34,11 +35,4 @@ class PcapFrameParser:
                 
                 # update last seen azimuth
                 self.lastAzi = firing.azimuth[-1]
-
-
-
-    
-
-            
-            
 

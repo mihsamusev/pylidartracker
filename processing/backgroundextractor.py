@@ -78,7 +78,6 @@ class BackgroundExtractor:
 
     def get_config(self):
         return {
-            "path": "",
             "method": "range_image", 
             "params": {
                 "percentile": self.percentile,

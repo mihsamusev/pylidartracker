@@ -26,6 +26,7 @@ class LidarProcessor():
         
         self.bg_subtractor = None
         self.bg_extractor = None
+        self.bg_filename = None
         self.originalBgFrame = None
         self.preprocessedBgArray = None
 
@@ -53,27 +54,24 @@ class LidarProcessor():
         else:
             self.destroyClipper()
 
-        # background subtractor
-        # if bg subtractor is in config, initialize it:
-        if "0000background_subtractor" in config.keys():
-            # check if bg extractor or a cloud is configured
-            bgconfig = config["background_subtractor"]
-            # try to load cloud
-            bg_path = bgconfig["background"]["path"]
-            if os.path.exists(bg_path):
-                pass
-                # do stuff
-            else:
+        # background cloud and subtractor
+        if "background" in config.keys():
+            if "path" in config["background"]:
+                # try to get background cloud by loading file
+                bg_path = config["background"]["path"]
+                self.loadBackground(bg_path)
+
+            elif "extractor" in config["background"]:
                 # if no path or invalid path, try to extract cloud
-                self.bg_extractor = BackgroundExtractor(
-                    **bgconfig["background"]["params"])
-                self.bg_extractor.extract(self._originalFrames)
-                self.backgroundArray = self.bg_extractor.get_background()
+                self.extractBackground(
+                    method=config["background"]["extractor"]["method"],
+                    **config["background"]["extractor"]["params"])
 
             # finally create bg subtractor
-            self.bg_subtractor = BackgroundSubtractor.factory(
-                method=bgconfig["method"], bg_cloud=self.backgroundFrame,
-                **bgconfig["params"])
+            if "subtractor" in config["background"]:
+                self.createBgSubtractor(
+                    method=config["background"]["subtractor"]["method"],
+                    **config["background"]["subtractor"]["params"])
         else:
             self.destroyBgExtractor()
             self.destroyBgSubtractor()
@@ -82,13 +80,22 @@ class LidarProcessor():
         with open(configpath, "w") as write_file:
 
             config = {}
+            # transformer pre-processor part
             if self.transformer is not None:
                 settings = self.transformer.get_config()
                 config["transformer"] = settings
 
+            # clipper pre-processor part
             if self.clipper is not None:
                 settings = self.clipper.get_config()
                 config["clipper"] = settings
+
+            # background pre-processor part
+            config["background"] = {}
+            if self.bg_filename is not None:
+                config["background"]["path"] = self.bg_filename
+            else:
+                config["background"]["path"] = ""
 
             if self.bg_extractor is not None:
                 settings = self.bg_extractor.get_config()
@@ -97,6 +104,10 @@ class LidarProcessor():
             if self.bg_subtractor is not None:
                 settings = self.bg_subtractor.get_config()
                 config["background"]["subtractor"] = settings
+
+            # TODO: clusterer part
+            # TODO: tracker part
+            # TODO: result definition part
 
             json.dump(config, write_file, indent=4)
             print("Config saved to:\n{0}".format(configpath))
@@ -236,11 +247,13 @@ class LidarProcessor():
     def saveBackground(self, filename):
         if self.originalBgFrame is not None:
             self.originalBgFrame.save_csv(filename)
+            self.bg_filename = filename
 
     def loadBackground(self, filename):
         self.bg_extractor = None
         self.originalBgFrame = Frame()
         self.originalBgFrame.load_csv(filename)
+        self.bg_filename = filename
         
         pts = self.arrayFromFrame(self.originalBgFrame)
         self.preprocessedBgArray = self.preprocessArray(pts)

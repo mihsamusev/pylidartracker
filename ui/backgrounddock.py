@@ -177,6 +177,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
 
         if validPath or extractor is not None:
             self.previewButton.setEnabled(True)
+            self.previewButton.setChecked(True)
             if subtractor is not None:
                 self.enableSubtraction.setChecked(True)
                 self.radiusBox.setValue(subtractor["params"]["search_radius"])

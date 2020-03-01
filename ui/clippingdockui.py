@@ -141,6 +141,7 @@ class ClippingDock(QtWidgets.QDockWidget):
         self.zMaxBox.setValue(z_range[1])
         self.addxDSB.setValue(1.0)
         self.addyDSB.setValue(1.0)
+        self.displayCropBox.setChecked(True)
         self.inverseCropping.setChecked(inverse)
 
     def reset(self):
