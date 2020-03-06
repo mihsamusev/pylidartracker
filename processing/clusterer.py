@@ -22,6 +22,11 @@ class Cluster():
     def getCentroid(self):
         pass
 
+    def getBounds(self):
+        xmax, ymax, zmax = np.max(self.points, axis=0)
+        xmin, ymin, zmin = np.min(self.points, axis=0)
+        return np.array([xmin, xmax, ymin, ymax, zmin, zmax])
+
     def fitBoundingBox(self, method="min_area_box"):
         self.bounding_box = BoundingBox.fit_box(method)
 
@@ -31,11 +36,11 @@ class BoundingBox():
         pass
 
 class NaiveClustering():
-    def __init__(self, search_radius=0.1, dimension=3):
+    def __init__(self, search_radius=0.1, dimensions=3):
         self.search_radius = search_radius
         self.dimensions = dimensions
         self.clusterer = AgglomerativeClustering(
-            n_clusters=None, distance_threshold=search_radius)
+            n_clusters=None, distance_threshold=search_radius, linkage="complete")
 
     def cluster(self, points):
         labels = self.clusterer.fit_predict(points[:,0:self.dimensions-1])

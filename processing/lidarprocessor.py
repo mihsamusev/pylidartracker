@@ -285,7 +285,10 @@ class LidarProcessor():
     # CLUSTERER
     #
     def getClusters(self, frameID):
-        return self.frameClusters[frameID]
+        if self.frameClusters:
+            return self.frameClusters[frameID]
+        else:
+            return []
 
     def extractClusters(self, method, **kwargs):
         self.clusterer = Clusterer.factory(method, **kwargs)
@@ -293,7 +296,7 @@ class LidarProcessor():
         for i, arr in enumerate(self._preprocessedArrays):
             clusters = self.clusterer.cluster(arr)
             self.frameClusters.append(clusters)
-            print(f"[DEBUG][CLUSTERING] got {len(clusters)}clusters for frame {i}")
+            print(f"[DEBUG][CLUSTERING] got {len(clusters)} clusters for frame {i}")
 
     def destroyClusterer(self):
         self.frameClusters = []

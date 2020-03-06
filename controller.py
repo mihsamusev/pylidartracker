@@ -62,10 +62,12 @@ class Controller():
     #
     # I/O
     #
-    def loadProjectConfig(self):
-        configpath = self._view.getJSONDialog()
-        if not configpath:
-            return
+    def loadProjectConfig(self, configpath=None):
+
+        if configpath is None:
+            configpath = self._view.getJSONDialog()
+            if not configpath:
+                return
 
         self._model.init_from_config(configpath)
         self._model.updatePreprocessed()
@@ -240,10 +242,10 @@ class Controller():
     def applyClustering(self):
         settings = {
             "search_radius": 0.2,
-            "dimensions": 3,
-            "min_samples": 20,
-            "multiprocess": False}
-        self._model.extractClusters(method="dbscan", **settings)
+            "dimensions": 3}
+            #"min_samples": 20,
+            #"multiprocess": False}
+        self._model.extractClusters(method="naive", **settings)
         self.updateClusters()
     #
     # UI UPDATES
@@ -285,8 +287,10 @@ class Controller():
     def updateClusters(self):
         clusters = self._model.getClusters(self._currentFrameIdx)
         print(f"Found {len(clusters)}")
+        bounds = []
         for i, c in enumerate(clusters):
-            print(f" cluster {i} with {c.size} points")
+            bounds.append(c.getBounds())
+        self._view.graphicsView.setClusterAABB_full(bounds)
 
     def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():
@@ -313,4 +317,5 @@ class Controller():
     def updateGraphicsView(self):
         self.updateRawPoints()
         self.updateBackgroundPoints()
+        self.updateClusters()
         self._view.graphicsView.draw()

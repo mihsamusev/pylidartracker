@@ -42,6 +42,30 @@ class LidarGraphicsView(gl.GLViewWidget):
             color=self.cbColor, width=self.cb_size)
         self.addItem(self.cb_bottom_poly_line)
 
+        # cluster box
+        self.cluster_box_lines = []
+        self.box_color = (1.0, 1.0, 0.0, 1.0)
+        self.box_width = 2
+        self.cluster_boxes = []
+        self.box_mesh_faces = np.array([
+                [0, 1, 3],
+                [1, 2, 3],
+                [4, 5, 7],
+                [5, 6, 7],
+                [0, 1, 4],
+                [1, 5, 4],
+                [1, 2, 6],
+                [2, 6, 5],
+                [3, 0, 4],
+                [0, 4, 7],
+                [2, 3, 7],
+                [3, 7, 6]
+            ])
+        self.box_mesh_colors = np.tile(np.array([1.0, 1.0, 0.0, 0.3]),
+            (self.box_mesh_faces.shape[0], 1))
+        self.box_mesh_vcolors = np.tile(np.array([1.0, 1.0, 0.0, 0.3]),
+            (8, 1))
+
         # setup grid
         self.grid = gl.GLGridItem()
         self.grid.scale(1,1,1)
@@ -180,6 +204,42 @@ class LidarGraphicsView(gl.GLViewWidget):
             self.cb_bottom_poly = np.vstack((self.cb_bottom_poly, self.cb_bottom_poly[0,:]))
             self.cbColor = (1.0, 0.0, 0.0, 1.0)
 
+    def setClusterAABB_full(self, bounds):
+        self.cluster_boxes = []
+        for b in bounds:
+            polygon = np.array([
+                [b[0], b[2], b[4]],
+                [b[1], b[2], b[4]],
+                [b[1], b[3], b[4]],
+                [b[0], b[3], b[4]],
+                [b[0], b[2], b[4]],
+                [b[0], b[2], b[5]],
+                [b[1], b[2], b[5]],
+                [b[1], b[3], b[5]],
+                [b[0], b[3], b[5]],
+                [b[0], b[2], b[5]],
+                [b[1], b[2], b[5]],
+                [b[1], b[2], b[4]],
+                [b[1], b[3], b[4]],
+                [b[1], b[3], b[5]],
+                [b[0], b[3], b[5]],
+                [b[0], b[3], b[4]]
+            ])
+            self.cluster_boxes.append(polygon)
+
+    def setClusterAABB_ground(self, bounds):
+        self.cluster_boxes = []
+        for b in bounds:
+            polygon = np.array([
+                [b[0], b[2], 0],
+                [b[1], b[2], 0],
+                [b[1], b[3], 0],
+                [b[0], b[3], 0],
+                [b[0], b[2], 0]
+            ])
+            self.cluster_boxes.append(polygon)
+
+
     def draw(self):
         #draw raw points
         self.rawCloud.setData(pos=self.rawPoints,
@@ -225,6 +285,19 @@ class LidarGraphicsView(gl.GLViewWidget):
                 t.setGLViewWidget(self)
                 self.box_points_id.append(t)
                 self.addItem(t)
+
+        # cluster boxes
+        try:
+            [self.removeItem(b) for b in self.cluster_box_lines]
+        except Exception:
+            pass
+
+        self.cluster_box_lines = []
+        for p in self.cluster_boxes:
+            l = gl.GLLinePlotItem(pos=p, color=self.box_color,
+                width=self.box_width)
+            self.addItem(l)
+            self.cluster_box_lines.append(l)
 
 if __name__ == "__main__":
     from PyQt5 import QtWidgets, QtCore

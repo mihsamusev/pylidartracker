@@ -251,4 +251,6 @@ if __name__ == "__main__":
     if args["pcap"] is not None:
         ctrl._loadFrames(args["pcap"], args["framecount"])
 
+    ctrl.loadProjectConfig(configpath=args["config"])
+
     sys.exit(app.exec())
