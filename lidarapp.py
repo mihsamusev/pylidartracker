@@ -10,6 +10,7 @@ from ui.transformdockui import TransformDock
 from ui.clippingdockui import ClippingDock
 from ui.lidargraphicsview import LidarGraphicsView
 from ui.backgrounddock import BackgroundDock
+from ui.clusteringdock import ClusteringDock
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
@@ -33,6 +34,7 @@ class LidarView(QtWidgets.QMainWindow):
         self._createTransformDock()
         self._createClippingDock()
         self._createBackgroundDock()
+        self._createClusteringDock()
 
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
@@ -60,8 +62,6 @@ class LidarView(QtWidgets.QMainWindow):
             else:
                 self.backgroundDock.reset()
 
-            
-            
     # TOOLBAR RELATED
     def _createToolBar(self):
         self.toolBar = QtWidgets.QToolBar(parent=self)
@@ -209,6 +209,20 @@ class LidarView(QtWidgets.QMainWindow):
         else:
             self.clippingDock.setVisible(False)
             self.clippingDock.setEnabled(False)
+
+    def _createClusteringDock(self):
+        self.clusteringDock = ClusteringDock(parent=self)
+        self.clusteringDock.setVisible(False)
+        self.clusteringDock.setEnabled(False)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.clusteringDock)
+
+    def showClusteringDock(self):
+        if not self.clusteringDock.isVisible():
+            self.clusteringDock.setVisible(True)
+            self.clusteringDock.setEnabled(True)
+        else:
+            self.clusteringDock.setVisible(False)
+            self.clusteringDock.setEnabled(False)
 
     def _createBackgroundDock(self):
         self.backgroundDock = BackgroundDock(parent=self)

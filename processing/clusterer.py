@@ -36,14 +36,18 @@ class BoundingBox():
         pass
 
 class NaiveClustering():
-    def __init__(self, search_radius=0.1, dimensions=3):
+    def __init__(self, search_radius=0.1, is_xy=False,
+        min_samples=20, linkage="single"):
         self.search_radius = search_radius
-        self.dimensions = dimensions
+        self.is_xy = is_xy
+        self.dimensions = 2 if is_xy else 3
+        self.min_samples = min_samples # TODO: NOT USED ANYWHERE
         self.clusterer = AgglomerativeClustering(
-            n_clusters=None, distance_threshold=search_radius, linkage="complete")
+            n_clusters=None, distance_threshold=search_radius,
+            linkage=linkage)
 
     def cluster(self, points):
-        labels = self.clusterer.fit_predict(points[:,0:self.dimensions-1])
+        labels = self.clusterer.fit_predict(points[:,:self.dimensions])
         unique_labels = set(labels)
 
         clusters = []
@@ -53,11 +57,12 @@ class NaiveClustering():
         return clusters
 
 class DBSCANClustering():
-    def __init__(self, search_radius=0.1, dimensions=3, 
+    def __init__(self, search_radius=0.1, is_xy=False, 
         min_samples=20, multiprocess=False):
         #
         self.search_radius = search_radius
-        self.dimensions = dimensions
+        self.is_xy = is_xy
+        self.dimensions = 2 if is_xy else 3
         self.min_samples = min_samples
         self.multiprocess = -1 if multiprocess else None
         self.clusterer = DBSCAN(
@@ -68,7 +73,7 @@ class DBSCANClustering():
         if points.shape[0] == 0:
             return []
 
-        labels = self.clusterer.fit_predict(points[:,0:self.dimensions-1])
+        labels = self.clusterer.fit_predict(points[:,:self.dimensions])
         unique_labels = set(labels)
 
         clusters = []

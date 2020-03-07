@@ -12,7 +12,7 @@ class LidarGraphicsView(gl.GLViewWidget):
         # Main cloud data
         self.rawPoints = np.zeros((1,3))
         self.rawColor = np.zeros((1,3), dtype=np.float32)
-        self.rawPtSize = 2
+        self.rawPtSize = 4
         self.rawCloud = gl.GLScatterPlotItem(
             pos=self.rawPoints,color=self.rawColor,size=self.rawPtSize)
         self.addItem(self.rawCloud)
@@ -206,38 +206,40 @@ class LidarGraphicsView(gl.GLViewWidget):
 
     def setClusterAABB_full(self, bounds):
         self.cluster_boxes = []
-        for b in bounds:
-            polygon = np.array([
-                [b[0], b[2], b[4]],
-                [b[1], b[2], b[4]],
-                [b[1], b[3], b[4]],
-                [b[0], b[3], b[4]],
-                [b[0], b[2], b[4]],
-                [b[0], b[2], b[5]],
-                [b[1], b[2], b[5]],
-                [b[1], b[3], b[5]],
-                [b[0], b[3], b[5]],
-                [b[0], b[2], b[5]],
-                [b[1], b[2], b[5]],
-                [b[1], b[2], b[4]],
-                [b[1], b[3], b[4]],
-                [b[1], b[3], b[5]],
-                [b[0], b[3], b[5]],
-                [b[0], b[3], b[4]]
-            ])
-            self.cluster_boxes.append(polygon)
+        if bounds:
+            for b in bounds:
+                polygon = np.array([
+                    [b[0], b[2], b[4]],
+                    [b[1], b[2], b[4]],
+                    [b[1], b[3], b[4]],
+                    [b[0], b[3], b[4]],
+                    [b[0], b[2], b[4]],
+                    [b[0], b[2], b[5]],
+                    [b[1], b[2], b[5]],
+                    [b[1], b[3], b[5]],
+                    [b[0], b[3], b[5]],
+                    [b[0], b[2], b[5]],
+                    [b[1], b[2], b[5]],
+                    [b[1], b[2], b[4]],
+                    [b[1], b[3], b[4]],
+                    [b[1], b[3], b[5]],
+                    [b[0], b[3], b[5]],
+                    [b[0], b[3], b[4]]
+                ])
+                self.cluster_boxes.append(polygon)
 
     def setClusterAABB_ground(self, bounds):
         self.cluster_boxes = []
-        for b in bounds:
-            polygon = np.array([
-                [b[0], b[2], 0],
-                [b[1], b[2], 0],
-                [b[1], b[3], 0],
-                [b[0], b[3], 0],
-                [b[0], b[2], 0]
-            ])
-            self.cluster_boxes.append(polygon)
+        if bounds:
+            for b in bounds:
+                polygon = np.array([
+                    [b[0], b[2], 0],
+                    [b[1], b[2], 0],
+                    [b[1], b[3], 0],
+                    [b[0], b[3], 0],
+                    [b[0], b[2], 0]
+                ])
+                self.cluster_boxes.append(polygon)
 
 
     def draw(self):

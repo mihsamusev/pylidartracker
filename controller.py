@@ -57,8 +57,10 @@ class Controller():
             self.applySubtraction)
 
         # clusteirng
-        self._view.actionCluster.triggered.connect(self.applyClustering)
-
+        self._view.actionCluster.triggered.connect(self._view.showClusteringDock)
+        self._view.clusteringDock.applyButton.clicked.connect(self.applyClustering)
+        self._view.clusteringDock.previewButton.stateChanged.connect(
+            self.previewClusters)
     #
     # I/O
     #
@@ -240,13 +242,15 @@ class Controller():
     # CLUSTERING
     #
     def applyClustering(self):
-        settings = {
-            "search_radius": 0.2,
-            "dimensions": 3}
-            #"min_samples": 20,
-            #"multiprocess": False}
-        self._model.extractClusters(method="naive", **settings)
-        self.updateClusters()
+        if self._view.clusteringDock.enableProcessing.isChecked():
+            settings = self._view.clusteringDock.getSettings()
+            settings["params"]["is_xy"] = True if settings["params"]["is_xy"].lower() == "yes" else False
+            print("[DEBUG]\n{}".format(settings))
+            self._model.extractClusters(method=settings["method"], **settings["params"])
+        else:
+            self._model.destroyClusterer()
+        self.previewClusters()
+
     #
     # UI UPDATES
     #
@@ -284,12 +288,16 @@ class Controller():
         self.updateBackgroundPoints()
         self._view.graphicsView.draw()
 
+    def previewClusters(self):
+            self.updateClusters()
+            self._view.graphicsView.draw()
+
     def updateClusters(self):
-        clusters = self._model.getClusters(self._currentFrameIdx)
-        print(f"Found {len(clusters)}")
         bounds = []
-        for i, c in enumerate(clusters):
-            bounds.append(c.getBounds())
+        if self._view.clusteringDock.previewButton.isChecked():
+            clusters = self._model.getClusters(self._currentFrameIdx)
+            for i, c in enumerate(clusters):
+                bounds.append(c.getBounds())
         self._view.graphicsView.setClusterAABB_full(bounds)
 
     def updateBackgroundPoints(self):
