@@ -204,43 +204,11 @@ class LidarGraphicsView(gl.GLViewWidget):
             self.cb_bottom_poly = np.vstack((self.cb_bottom_poly, self.cb_bottom_poly[0,:]))
             self.cbColor = (1.0, 0.0, 0.0, 1.0)
 
-    def setClusterAABB_full(self, bounds):
+    def setClusterAABB(self, polygons):
         self.cluster_boxes = []
-        if bounds:
-            for b in bounds:
-                polygon = np.array([
-                    [b[0], b[2], b[4]],
-                    [b[1], b[2], b[4]],
-                    [b[1], b[3], b[4]],
-                    [b[0], b[3], b[4]],
-                    [b[0], b[2], b[4]],
-                    [b[0], b[2], b[5]],
-                    [b[1], b[2], b[5]],
-                    [b[1], b[3], b[5]],
-                    [b[0], b[3], b[5]],
-                    [b[0], b[2], b[5]],
-                    [b[1], b[2], b[5]],
-                    [b[1], b[2], b[4]],
-                    [b[1], b[3], b[4]],
-                    [b[1], b[3], b[5]],
-                    [b[0], b[3], b[5]],
-                    [b[0], b[3], b[4]]
-                ])
-                self.cluster_boxes.append(polygon)
-
-    def setClusterAABB_ground(self, bounds):
-        self.cluster_boxes = []
-        if bounds:
-            for b in bounds:
-                polygon = np.array([
-                    [b[0], b[2], 0],
-                    [b[1], b[2], 0],
-                    [b[1], b[3], 0],
-                    [b[0], b[3], 0],
-                    [b[0], b[2], 0]
-                ])
-                self.cluster_boxes.append(polygon)
-
+        if polygons:
+            for p in polygons:
+                self.cluster_boxes.append(p)
 
     def draw(self):
         #draw raw points

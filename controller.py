@@ -293,12 +293,13 @@ class Controller():
             self._view.graphicsView.draw()
 
     def updateClusters(self):
-        bounds = []
+        boxes = []
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
             for i, c in enumerate(clusters):
-                bounds.append(c.getBounds())
-        self._view.graphicsView.setClusterAABB_full(bounds)
+                if c.size > 20:
+                    boxes.append(c.getOOBB())
+        self._view.graphicsView.setClusterAABB(boxes)
 
     def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():
