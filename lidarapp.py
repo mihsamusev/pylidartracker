@@ -178,9 +178,14 @@ class LidarView(QtWidgets.QMainWindow):
 
     # STATUSBAR RELATED
     def _createStatusBar(self):
-        self.statusBar = QtWidgets.QStatusBar(parent=self)
+        self.statusBar = QtWidgets.QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage("Load .pcap file to start...")
+
+        self.statusProgressBar = QtWidgets.QProgressBar()
+        self.statusProgressBar.setValue(0)
+        self.statusProgressBar.setVisible(False)
+        self.statusBar.addPermanentWidget(self.statusProgressBar)
 
     def _createTransformDock(self):
         self.transformDock = TransformDock(parent=self)
@@ -262,9 +267,11 @@ if __name__ == "__main__":
     model = LidarProcessor()
     ctrl = Controller(view=view, model=model)
 
-    if args["pcap"] is not None:
-        ctrl._loadFrames(args["pcap"], args["framecount"])
+    # for faster debug
+    #if args["pcap"] is not None:
+        #ctrl.on_load_pcap(filename=args["pcap"], count=args["framecount"])
 
-    ctrl.loadProjectConfig(configpath=args["config"])
+    #if args["config"] is not None:
+        #ctrl.loadProjectConfig(configpath=args["config"])
 
     sys.exit(app.exec())

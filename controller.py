@@ -1,5 +1,6 @@
-from PyQt5 import QtCore 
+from PyQt5 import QtCore
 import numpy as np
+from ui.uithread import Worker
 
 class Controller():
     def __init__(self, view, model):
@@ -8,7 +9,7 @@ class Controller():
         self._connectSignals()
         self._currentFrameIdx = 0
         self._maxFrames = 0
-
+        self.threadpool = QtCore.QThreadPool()
         self.isLatestTransform = False
 
     def _connectSignals(self):
@@ -17,13 +18,13 @@ class Controller():
         self._view.frameSpinBox.valueChanged.connect(self.frameChanged)
 
         # MENUBAR
-        self._view.openFileMenu.triggered.connect(self.loadFrames)
+        self._view.openFileMenu.triggered.connect(self.on_load_pcap)
         self._view.saveConfigMenu.triggered.connect(self.saveProjectConfig)
         self._view.loadConfigMenu.triggered.connect(self.loadProjectConfig)
 
         # TOOLBAR
         # load 
-        self._view.actionLoadPCAP.triggered.connect(self.loadFrames)
+        self._view.actionLoadPCAP.triggered.connect(self.on_load_pcap)
         
         # transform action
         self._view.actionTransform.triggered.connect(
@@ -64,12 +65,10 @@ class Controller():
     #
     # I/O
     #
-    def loadProjectConfig(self, configpath=None):
-
-        if configpath is None:
-            configpath = self._view.getJSONDialog()
-            if not configpath:
-                return
+    def loadProjectConfig(self):
+        configpath = self._view.getJSONDialog()
+        if not configpath:
+            return
 
         self._model.init_from_config(configpath)
         self._model.updatePreprocessed()
@@ -126,7 +125,50 @@ class Controller():
         self.allowToolbarActions(True)
         self.allowMenuActions(True)
 
+    def on_load_pcap(self):
+        fname = self._view.getPCAPDialog()
+        if not fname:
+            return
 
+        # read some frames
+        count=100
+        self._maxFrames = count #TODO: dialog for that
+
+        # activate status bar
+        self._view.statusBar.showMessage("Reading point cloud data ...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # Pass the function to execute
+        worker = Worker(self.load_frames, fname, self._maxFrames)
+        worker.signals.progress.connect(self.frame_loading_progress)
+        worker.signals.finished.connect(self.frame_loading_complete)
+        
+        # Execute worker
+        self.threadpool.start(worker)
+
+    def frame_loading_progress(self, n):
+        self._view.statusProgressBar.setValue(n)
+
+    def frame_loading_complete(self):
+        self._view.statusBar.showMessage("Point clouds loaded")
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
+
+        # update scroller
+        self.updateDataScrollers()
+        # for flexin visuals
+        self.updateGraphicsView()
+
+        self.allowToolbarActions(True)
+        self.allowMenuActions(True)
+
+    def load_frames(self, filename, count, progress_callback):
+        self._model.setFilename(filename)
+        self._model.restartBuffering()
+        self._model.resetProcessor()
+        for n in range(count):
+            self._model.loadFrame()
+            progress_callback.emit((n+1)*100/(count))
 
     #
     # PLANE FITTING AND TRANSFORM ACTON
@@ -277,10 +319,6 @@ class Controller():
         self._view.frameSpinBox.setMaximum(self._maxFrames-1)
         self._view.frameSpinBox.setValue(self._currentFrameIdx)
 
-    def updateStatusBar(self):
-        info = "Transform is up to date" if self.isLatestTransform else "transform is outdated"
-        self._view.statusBar.showMessage(info)
-    
     #
     # GRAPHICS UPDATE
     #

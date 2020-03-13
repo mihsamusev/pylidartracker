@@ -134,7 +134,9 @@ class LidarProcessor():
         #self.bufferStarted = True
 
     def loadNFrames(self, N):
+        self._timestamps = []
         self._originalFrames = []
+        self._preprocessedArrays = []
         for i in range(N):
             (ts, f) = self.readNextFrame()
             self._timestamps.append(ts)
@@ -150,6 +152,21 @@ class LidarProcessor():
         except StopIteration:
             out = (None, None)
         return out
+
+    # test stuff
+    def resetProcessor(self):
+        self._timestamps = []
+        self._originalFrames = []
+        self._preprocessedArrays = []
+
+    def loadFrame(self):
+        (ts, f) = self.readNextFrame()
+        self._timestamps.append(ts)
+        self._originalFrames.append(f)
+
+        # preprocessed frames are the cartesian xyz arrays
+        pts = self.arrayFromFrame(f)
+        self._preprocessedArrays.append(pts)
 
     def getTimestamp(self, frameID):
         return self._timestamps[frameID]
