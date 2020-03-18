@@ -153,6 +153,10 @@ class LidarProcessor():
             out = (None, None)
         return out
 
+    def peek_size(self):
+        parser = PcapFrameParser(self.filename)
+        return parser.peek_size()
+
     # test stuff
     def resetProcessor(self):
         self._timestamps = []
@@ -183,7 +187,7 @@ class LidarProcessor():
     # 
     # PREPROCESSING
     #
-    def updatePreprocessed(self):
+    def updateBackground(self):
         # ensure the subtractor is initiated with the correct
         # background point cloud
         if self.originalBgFrame is not None:
@@ -192,18 +196,27 @@ class LidarProcessor():
             if self.bg_subtractor is not None:
                 self.bg_subtractor.set_background(self.preprocessedBgArray)
 
+    def updatePreprocessedGen(self):
+        self.updateBackground()
         # update preprocessed points
         self._preprocessedArrays = []
         for (i, frame) in enumerate(self._originalFrames):
-            start = time.time()
             pts = self.arrayFromFrame(frame)
             pts = self.preprocessArray(pts)
             self._preprocessedArrays.append(pts)
 
-            # timing
-            print(f"[DEBUG] pre-processing frame{i+1}/{len(self._originalFrames)} in {time.time() - start} s")
+            # yield completion status
+            yield (i+1)*100/(len(self._originalFrames))
 
+    def updatePreprocessed(self):
+        self.updateBackground()
 
+        # update preprocessed points
+        self._preprocessedArrays = []
+        for (i, frame) in enumerate(self._originalFrames):
+            pts = self.arrayFromFrame(frame)
+            pts = self.preprocessArray(pts)
+            self._preprocessedArrays.append(pts)
 
     def preprocessArray(self, arr):
         # apply transformer
@@ -306,6 +319,16 @@ class LidarProcessor():
             return self.frameClusters[frameID]
         else:
             return []
+
+    def extractClustersGen(self, method, **kwargs):
+        self.clusterer = Clusterer.factory(method, **kwargs)
+        self.frameClusters = []
+        for i, arr in enumerate(self._preprocessedArrays):
+            clusters = self.clusterer.cluster(arr)
+            self.frameClusters.append(clusters)
+            
+            # yield completion status
+            yield (i+1)*100/(len(self._originalFrames))
 
     def extractClusters(self, method, **kwargs):
         self.clusterer = Clusterer.factory(method, **kwargs)

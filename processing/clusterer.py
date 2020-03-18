@@ -101,14 +101,12 @@ class Cluster():
             aa_min = np.min(aligned_boundary, axis=0)
             aa_max = np.max(aligned_boundary, axis=0)
             area = (aa_max[0] - aa_min[0]) * (aa_max[1] - aa_min[0])
-            print("Area is {}".format(area))
+
             if area < minArea:
                 minArea = area
                 rotation_to_min_area_box = rotation
                 b_min = aa_min
                 b_max = aa_max
-
-        print("min area found: area: {} xy_min {} xy_max {}".format(minArea,aa_min[0:2],aa_max[0:2]))
 
         if is_3d:
             zmax = np.max(self.points[:,2])

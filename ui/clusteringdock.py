@@ -128,7 +128,7 @@ class AgglomerativeClusteringForm(ClusteringForm):
         self.inputs["search_radius"]["widget"].setRange(0.0, 2.0)
         self.inputs["search_radius"]["widget"].setSingleStep(0.1)
         self.inputs["linkage"] = {"label":"linkage type:","widget": QtWidgets.QComboBox()}
-        [self.inputs["linkage"]["widget"].addItem(i) for i in ["complete","single","ward"]]
+        [self.inputs["linkage"]["widget"].addItem(i) for i in ["single","complete","ward"]]
         self.inputs["is_xy"] = {"label":"only XY:","widget": QtWidgets.QComboBox()}
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["no","yes"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}

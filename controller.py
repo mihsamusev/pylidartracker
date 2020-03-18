@@ -71,7 +71,7 @@ class Controller():
             return
 
         self._model.init_from_config(configpath)
-        self._model.updatePreprocessed()
+        self.apply_preprocessing()
         
         self._view.set_from_config(configpath)
         
@@ -140,13 +140,13 @@ class Controller():
 
         # Pass the function to execute
         worker = Worker(self.load_frames, fname, self._maxFrames)
-        worker.signals.progress.connect(self.frame_loading_progress)
+        worker.signals.progress.connect(self.frame_processing_progress)
         worker.signals.finished.connect(self.frame_loading_complete)
         
         # Execute worker
         self.threadpool.start(worker)
 
-    def frame_loading_progress(self, n):
+    def frame_processing_progress(self, n):
         self._view.statusProgressBar.setValue(n)
 
     def frame_loading_complete(self):
@@ -169,6 +169,37 @@ class Controller():
         for n in range(count):
             self._model.loadFrame()
             progress_callback.emit((n+1)*100/(count))
+
+    #
+    # MODEL UPDATING
+    #
+    def _apply_preprocessing_fn(self, progress_callback):
+        for p in self._model.updatePreprocessedGen():
+            progress_callback.emit(p)
+
+    def apply_preprocessing(self):
+        # activate status bar
+        self._view.statusBar.showMessage("Applying preprocessing ...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # TODO: block buttons
+
+        # Pass the function to execute worker task
+        worker = Worker(self._apply_preprocessing_fn)
+        worker.signals.progress.connect(self.frame_processing_progress)
+        worker.signals.finished.connect(self.frame_preprocessing_complete)
+        self.threadpool.start(worker)
+
+    def frame_preprocessing_complete(self):
+        self._view.statusBar.showMessage("Point clouds preprocessed")
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
+
+        self.updateGraphicsView()
+
+        #self.allowToolbarActions(True)
+        #self.allowMenuActions(True)
+
 
     #
     # PLANE FITTING AND TRANSFORM ACTON
@@ -213,12 +244,12 @@ class Controller():
     def applyTransform(self):
         if self._view.transformDock.enableTransform.isChecked():
             self._view.graphicsView.setSelectedVisible(False)
-            self._model.updatePreprocessed()
+            self.apply_preprocessing()
         else:
             self._view.transformDock.updateResult(None)
             self._model.destroyTransformer()
-            self._model.updatePreprocessed()
-            
+            self.apply_preprocessing()
+
         # update view and status bar
         self.updateGraphicsView()
 
@@ -232,11 +263,11 @@ class Controller():
         self._model.createClipper(method="polygon", **settings["params"])
 
         if settings["transform"]:
-            self._model.updatePreprocessed()
+            self.apply_preprocessing()
         else:
             self._view.clippingDock.reset()
             self._model.destroyClipper()
-            self._model.updatePreprocessed()
+            self.apply_preprocessing()
 
         #update view and status bar
         self.updateGraphicsView()
@@ -273,10 +304,10 @@ class Controller():
         if self._view.backgroundDock.enableSubtraction.isChecked():
             self._model.createBgSubtractor(method=settings["subtractor"]["method"],
             **settings["subtractor"]["params"])
-            self._model.updatePreprocessed()
+            self.apply_preprocessing()
         else:
             self._model.destroyBgSubtractor()
-            self._model.updatePreprocessed()
+            self.apply_preprocessing()
 
         #update view and status bar
         self.updateGraphicsView()
@@ -287,6 +318,7 @@ class Controller():
         if self._view.clusteringDock.enableProcessing.isChecked():
             settings = self._view.clusteringDock.getSettings()
             settings["params"]["is_xy"] = True if settings["params"]["is_xy"].lower() == "yes" else False
+            
             print("[DEBUG]\n{}".format(settings))
             self._model.extractClusters(method=settings["method"], **settings["params"])
         else:
