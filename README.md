@@ -33,6 +33,6 @@ Important but can be done before first fully functional BETA
 * On close there is no dial window asking if you want to save current config
 * On loading new file there is no change in config
 * On load config the UI updates first and Preprocessor updates on a thread, so while preprocessor is updated the ui update turns on the background display and crop box display that are drawn on the non-updated points
-* 
+* QHULL breaks when cluster sizes are very low!
 * 
 

@@ -11,6 +11,7 @@ from ui.clippingdockui import ClippingDock
 from ui.lidargraphicsview import LidarGraphicsView
 from ui.backgrounddock import BackgroundDock
 from ui.clusteringdock import ClusteringDock
+from ui.trackingdock import TrackingDock
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
@@ -35,6 +36,7 @@ class LidarView(QtWidgets.QMainWindow):
         self._createClippingDock()
         self._createBackgroundDock()
         self._createClusteringDock()
+        self._createTrackingDock()
 
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
@@ -115,17 +117,17 @@ class LidarView(QtWidgets.QMainWindow):
         icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCluster.setIcon(icon)
-        self.actionCluster.setEnabled(True)
+        self.actionCluster.setEnabled(False)
         self.toolBar.addAction(self.actionCluster)
 
-        # TRACK
-        self.actionTrack = QtWidgets.QAction(parent=self)
+        # TRACKER
+        self.actionTracker = QtWidgets.QAction(parent=self)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/tracking.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
-        self.actionTrack.setIcon(icon)
-        self.actionTrack.setEnabled(False)
-        self.toolBar.addAction(self.actionTrack)
+        self.actionTracker.setIcon(icon)
+        self.actionTracker.setEnabled(False)
+        self.toolBar.addAction(self.actionTracker)
 
         # slider and spin box
         self.toolBar.addSeparator()
@@ -243,9 +245,21 @@ class LidarView(QtWidgets.QMainWindow):
             self.backgroundDock.setVisible(False)
             self.backgroundDock.setEnabled(False)
 
+    def _createTrackingDock(self):
+        self.trackingDock = TrackingDock(parent=self)
+        self.trackingDock.setVisible(False)
+        self.trackingDock.setEnabled(False)
+        self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.trackingDock)
+
+    def showTrackingDock(self):
+        if not self.trackingDock.isVisible():
+            self.trackingDock.setVisible(True)
+            self.trackingDock.setEnabled(True)
+        else:
+            self.trackingDock.setVisible(False)
+            self.trackingDock.setEnabled(False)
+
     def _createGraphicsDisplay(self):
-        # setup main graphics window
-        #self.graphicsView = gl.GLViewWidget()
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
 

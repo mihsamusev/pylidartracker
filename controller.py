@@ -62,6 +62,10 @@ class Controller():
         self._view.clusteringDock.applyButton.clicked.connect(self.applyClustering)
         self._view.clusteringDock.previewButton.stateChanged.connect(
             self.previewClusters)
+
+        # tracking
+        self._view.actionTracker.triggered.connect(self._view.showTrackingDock)
+        self._view.trackingDock.applyButton.clicked.connect(self.applyTracking)
     #
     # I/O
     #
@@ -71,11 +75,12 @@ class Controller():
             return
 
         self._model.init_from_config(configpath)
+
+        # runs on a thread that reports progress
+        # and updates the inteface on completion
         self.apply_preprocessing()
         
         self._view.set_from_config(configpath)
-        
-        self.updateGraphicsView()
 
     def saveProjectConfig(self):
         configpath = self._view.setJSONDialog()
@@ -326,6 +331,19 @@ class Controller():
         self.previewClusters()
 
     #
+    # TRACKING
+    #
+    
+    def applyTracking(self):
+        if self._view.trackingDock.enableProcessing.isChecked():
+            settings = self._view.trackingDock.getSettings()
+            self._model.trackClusters(method=settings["method"], **settings["params"])
+        else:
+            print("not doing crap")
+            self._model.destroyTracker()
+        self.previewClusters()
+    
+    #
     # UI UPDATES
     #
     def frameChanged(self, idx):
@@ -338,6 +356,8 @@ class Controller():
         self._view.actionTransform.setEnabled(enabled)
         self._view.actionClipping.setEnabled(enabled)
         self._view.actionBackground.setEnabled(enabled)
+        self._view.actionCluster.setEnabled(enabled)
+        self._view.actionTracker.setEnabled(enabled)
         self._view.frameSlider.setEnabled(enabled)
         self._view.frameSpinBox.setEnabled(enabled)
 
@@ -364,12 +384,14 @@ class Controller():
 
     def updateClusters(self):
         boxes = []
+        labels = []
         if self._view.clusteringDock.previewButton.isChecked():
             clusters = self._model.getClusters(self._currentFrameIdx)
-            for i, c in enumerate(clusters):
-                if c.size > 20:
-                    boxes.append(c.getOOBB())
+            for c in clusters:
+                boxes.append(c.getOOBB())
+                labels.append(c.id)
         self._view.graphicsView.setClusterAABB(boxes)
+        self._view.graphicsView.setClusterLabels(labels)
 
     def updateBackgroundPoints(self):
         if self._view.backgroundDock.previewButton.isChecked():

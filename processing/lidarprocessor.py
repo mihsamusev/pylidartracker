@@ -2,6 +2,7 @@ import copy
 import json
 import numpy as np
 import time
+import os
 from .pcapframeparser import PcapFrameParser
 from .framestream import FrameStream
 from .planetranformer import PlaneTransformer
@@ -10,6 +11,7 @@ from .backgroundextractor import BackgroundExtractor
 from .backgroundsubtractor import BackgroundSubtractor
 from .dataentities import Frame
 from .clusterer import Clusterer
+from .tracker import Tracker
 
 class LidarProcessor():
     def __init__(self):
@@ -33,6 +35,8 @@ class LidarProcessor():
 
         self.clusterer = None
         self.frameClusters = []
+
+        self.tracker = None
     #
     # LOAD/SAVE config
     #
@@ -59,12 +63,16 @@ class LidarProcessor():
 
         # background cloud and subtractor
         if "background" in config.keys():
+            isLoaded = True
             if "path" in config["background"]:
                 # try to get background cloud by loading file
                 bg_path = config["background"]["path"]
-                self.loadBackground(bg_path)
+                if os.path.exists(bg_path):
+                    self.loadBackground(bg_path)
+                else:
+                    isLoaded = False
 
-            elif "extractor" in config["background"]:
+            if "extractor" in config["background"] and not isLoaded:
                 # if no path or invalid path, try to extract cloud
                 self.extractBackground(
                     method=config["background"]["extractor"]["method"],
@@ -341,4 +349,26 @@ class LidarProcessor():
     def destroyClusterer(self):
         self.frameClusters = []
         self.clusterer = None
+
+    #
+    # TRACKING
+    #
+    def trackClusters(self, method, **kwargs):
+        self.tracker = Tracker.factory(method, **kwargs)
+        for i, clusters in enumerate(self.frameClusters):
+            # TODO: Guarantee that centroid is calculated on creation
+            centroids = [c.centroid for c in clusters]
+            self.tracker.update(centroids)
+            mapping = self.tracker.getInputMapping()
+            for j, c in enumerate(clusters):
+                c.id = mapping[j]
+
+            # yield completion status
+            #yield (i+1)*100/(len(self._originalFrames))
+
+    def destroyTracker(self):
+        self.tracker = None
+        for clusters in self.frameClusters:
+            for c in clusters:
+                c.id = None
 

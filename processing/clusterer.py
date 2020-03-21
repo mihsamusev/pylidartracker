@@ -15,14 +15,9 @@ class Cluster():
     def __init__(self, points):
         self.points = points
         self.size = points.shape[0]
-        self.centroid = None
+        self.centroid = np.mean(self.points, axis=0)
         self.bounding_box = None
-        self.track = None
-
-
-    def getCentroid(self):
-        self.centroid = np.mean(self.points, axis=1)
-        return self.centroid
+        self.id = "GLINOMES"
 
     def getAABB(self, is_3d=True):
         xmax, ymax, zmax = np.max(self.points, axis=0)
@@ -159,13 +154,17 @@ class NaiveClustering():
             linkage=linkage)
 
     def cluster(self, points):
+        clusters = []
+        if points.shape[0] == 0:
+            return clusters
+        
         labels = self.clusterer.fit_predict(points[:,:self.dimensions])
         unique_labels = set(labels)
 
-        clusters = []
         for k in unique_labels:
             cluster_mask = labels == k
-            clusters.append(Cluster(points[cluster_mask]))
+            if np.sum(cluster_mask) >= self.min_samples:
+                clusters.append(Cluster(points[cluster_mask]))
         return clusters
 
 class DBSCANClustering():

@@ -44,9 +44,11 @@ class LidarGraphicsView(gl.GLViewWidget):
 
         # cluster box
         self.cluster_box_lines = []
+        self.cluster_box_text = []
         self.box_color = (1.0, 1.0, 0.0, 1.0)
         self.box_width = 2
         self.cluster_boxes = []
+        self.cluster_labels = []
         self.box_mesh_faces = np.array([
                 [0, 1, 3],
                 [1, 2, 3],
@@ -77,9 +79,6 @@ class LidarGraphicsView(gl.GLViewWidget):
         xax = GLTextItem(X=1, Y=0, Z=0, text="X")
         yax = GLTextItem(X=0, Y=1, Z=0, text="Y")
         zax = GLTextItem(X=0, Y=0, Z=1, text="Z")
-        xax.setGLViewWidget(self)
-        yax.setGLViewWidget(self)
-        zax.setGLViewWidget(self)
         self.addItem(xax)
         self.addItem(yax)
         self.addItem(zax)
@@ -210,6 +209,12 @@ class LidarGraphicsView(gl.GLViewWidget):
             for p in polygons:
                 self.cluster_boxes.append(p)
 
+    def setClusterLabels(self, labels):
+        self.cluster_labels = []
+        if labels:
+            for l in labels:
+                self.cluster_labels.append(l)
+
     def draw(self):
         #draw raw points
         self.rawCloud.setData(pos=self.rawPoints,
@@ -220,6 +225,12 @@ class LidarGraphicsView(gl.GLViewWidget):
             color=self.bgColor,size=self.bgPtSize)
         
         # draw crop box
+        self.drawCropBox()
+
+        # draw clusters
+        self.drawClusters()
+
+    def drawCropBox(self):
         self.cb_top_poly_line.setData(pos=self.cb_top_poly,
             color=self.cbColor, width=self.cb_size)
         self.cb_bottom_poly_line.setData(pos=self.cb_bottom_poly,
@@ -252,22 +263,37 @@ class LidarGraphicsView(gl.GLViewWidget):
 
                 #add text
                 t = GLTextItem(X=pts[1,0], Y=pts[1,1], Z=pts[1,2], text=f"p{i+1}")
-                t.setGLViewWidget(self)
                 self.box_points_id.append(t)
                 self.addItem(t)
 
+    def drawClusters(self):
         # cluster boxes
         try:
             [self.removeItem(b) for b in self.cluster_box_lines]
         except Exception:
             pass
 
+        # remove text
+        try:
+            [self.removeItem(t) for t in self.cluster_box_text]
+        except Exception:
+            pass
+
         self.cluster_box_lines = []
-        for p in self.cluster_boxes:
-            l = gl.GLLinePlotItem(pos=p, color=self.box_color,
+        self.cluster_box_text = []
+        for box, label in zip(self.cluster_boxes, self.cluster_labels):
+            l = gl.GLLinePlotItem(pos=box, color=self.box_color,
                 width=self.box_width)
             self.addItem(l)
             self.cluster_box_lines.append(l)
+
+            #add cluster labels
+            cx, cy = np.mean(box[0:4,0:2],axis=0)
+            z = np.max(box[:,2])
+            t = GLTextItem(X=cx, Y=cy, Z=z,
+                text="ID_{}".format(label))
+            self.addItem(t)
+            self.cluster_box_text.append(t)
 
 if __name__ == "__main__":
     from PyQt5 import QtWidgets, QtCore

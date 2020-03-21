@@ -9,9 +9,11 @@ class GLTextItem(GLGraphicsItem):
         self.X = X
         self.Y = Y
         self.Z = Z
-        #self.GLViewWidget = parent
 
     def setGLViewWidget(self, GLViewWidget):
+        self.GLViewWidget = GLViewWidget
+
+    def _setView(self, GLViewWidget):
         self.GLViewWidget = GLViewWidget
 
     def setText(self, text):
