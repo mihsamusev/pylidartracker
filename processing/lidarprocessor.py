@@ -19,6 +19,7 @@ class LidarProcessor():
         self._originalFrames = []
         self._timestamps = []
         self._preprocessedArrays = []
+        self._preprocessedArraysTemp = []
         self.bufferStarted = False
         self.frameGenerator = None
         self.frameBuffer = None
@@ -328,9 +329,11 @@ class LidarProcessor():
         else:
             return []
 
-    def extractClustersGen(self, method, **kwargs):
+    def createClusterer(self, method, **kwargs):
         self.clusterer = Clusterer.factory(method, **kwargs)
         self.frameClusters = []
+
+    def extractClustersGen(self):
         for i, arr in enumerate(self._preprocessedArrays):
             clusters = self.clusterer.cluster(arr)
             self.frameClusters.append(clusters)
@@ -344,7 +347,6 @@ class LidarProcessor():
         for i, arr in enumerate(self._preprocessedArrays):
             clusters = self.clusterer.cluster(arr)
             self.frameClusters.append(clusters)
-            print(f"[DEBUG][CLUSTERING] got {len(clusters)} clusters for frame {i}")
 
     def destroyClusterer(self):
         self.frameClusters = []
@@ -353,8 +355,10 @@ class LidarProcessor():
     #
     # TRACKING
     #
-    def trackClusters(self, method, **kwargs):
+    def createTracker(self, method, **kwargs):
         self.tracker = Tracker.factory(method, **kwargs)
+
+    def trackClustersGen(self):
         for i, clusters in enumerate(self.frameClusters):
             # TODO: Guarantee that centroid is calculated on creation
             centroids = [c.centroid for c in clusters]
@@ -364,7 +368,7 @@ class LidarProcessor():
                 c.id = mapping[j]
 
             # yield completion status
-            #yield (i+1)*100/(len(self._originalFrames))
+            yield (i+1)*100/(len(self._originalFrames))
 
     def destroyTracker(self):
         self.tracker = None

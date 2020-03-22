@@ -17,7 +17,7 @@ class Cluster():
         self.size = points.shape[0]
         self.centroid = np.mean(self.points, axis=0)
         self.bounding_box = None
-        self.id = "GLINOMES"
+        self.id = None
 
     def getAABB(self, is_3d=True):
         xmax, ymax, zmax = np.max(self.points, axis=0)

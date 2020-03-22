@@ -4,7 +4,6 @@ import numpy as np
 import argparse
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph.opengl as gl
-import ui.iconresource_rc
 
 from ui.transformdockui import TransformDock
 from ui.clippingdockui import ClippingDock
@@ -12,6 +11,7 @@ from ui.lidargraphicsview import LidarGraphicsView
 from ui.backgrounddock import BackgroundDock
 from ui.clusteringdock import ClusteringDock
 from ui.trackingdock import TrackingDock
+from ui.outputdialog import OutputDialog
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
@@ -74,7 +74,7 @@ class LidarView(QtWidgets.QMainWindow):
         # LOAD
         self.actionLoadPCAP = QtWidgets.QAction(parent=self)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/velodyne_hdl.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/velodyne_hdl.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionLoadPCAP.setIcon(icon)
         self.toolBar.addAction(self.actionLoadPCAP)
@@ -84,7 +84,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionTransform = QtWidgets.QAction(parent=self)
         self.actionTransform.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/transform.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/transform.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTransform.setIcon(icon)
         self.actionTransform.setEnabled(False)
@@ -94,7 +94,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionClipping = QtWidgets.QAction(parent=self)
         self.actionClipping.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/clipping.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/clipping.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionClipping.setIcon(icon)
         self.actionClipping.setEnabled(False)
@@ -104,7 +104,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionBackground = QtWidgets.QAction(parent=self)
         self.actionBackground.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/bg_extraction.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/bg_extraction.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionBackground.setIcon(icon)
         self.actionBackground.setEnabled(False)
@@ -114,7 +114,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.toolBar.addSeparator()
         self.actionCluster = QtWidgets.QAction(parent=self)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/clustering.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCluster.setIcon(icon)
         self.actionCluster.setEnabled(False)
@@ -123,11 +123,21 @@ class LidarView(QtWidgets.QMainWindow):
         # TRACKER
         self.actionTracker = QtWidgets.QAction(parent=self)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/Toolbar/images/tracking.png"),
+        icon.addPixmap(QtGui.QPixmap("./images/tracking.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTracker.setIcon(icon)
         self.actionTracker.setEnabled(False)
         self.toolBar.addAction(self.actionTracker)
+
+        # OUTPUT
+        self.toolBar.addSeparator()
+        self.actionOutput = QtWidgets.QAction(parent=self)
+        icon = QtGui.QIcon()
+        icon.addPixmap(QtGui.QPixmap("./images/output.png"),
+            QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.actionOutput.setIcon(icon)
+        self.actionOutput.setEnabled(False)
+        self.toolBar.addAction(self.actionOutput)
 
         # slider and spin box
         self.toolBar.addSeparator()
@@ -262,6 +272,10 @@ class LidarView(QtWidgets.QMainWindow):
     def _createGraphicsDisplay(self):
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
+
+    def callOutputDialog(self):
+        self.outputDialog = OutputDialog(200, self)
+        self.outputDialog.show()
 
 if __name__ == "__main__":
     # for debugging

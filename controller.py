@@ -26,7 +26,7 @@ class Controller():
         # load 
         self._view.actionLoadPCAP.triggered.connect(self.on_load_pcap)
         
-        # transform action
+        # transform dock
         self._view.actionTransform.triggered.connect(
             self._view.showTransformDock)
         self._view.transformDock.pickBtn.toggled.connect(
@@ -36,7 +36,7 @@ class Controller():
         self._view.transformDock.applyButton.clicked.connect(
             self.applyTransform)
 
-        # clipping action
+        # clipping dock
         self._view.actionClipping.triggered.connect(
             self._view.showClippingDock)
         self._view.clippingDock.valueChanged.connect(
@@ -44,28 +44,31 @@ class Controller():
         self._view.clippingDock.applyButton.clicked.connect(
             self.applyClipping)
 
-        # background
+        # background dock
         self._view.actionBackground.triggered.connect(
             self._view.showBackgroundDock)
         self._view.backgroundDock.extractButton.clicked.connect(
             self.extractBackground)
         self._view.backgroundDock.loadButton.clicked.connect(self.loadBackground)
         self._view.backgroundDock.saveButton.clicked.connect(self.saveBackground)
-        # quckie
+
         self._view.backgroundDock.previewButton.stateChanged.connect(
             self.previewBackground)
         self._view.backgroundDock.applyButton.clicked.connect(
             self.applySubtraction)
 
-        # clusteirng
+        # clusteirng dock
         self._view.actionCluster.triggered.connect(self._view.showClusteringDock)
         self._view.clusteringDock.applyButton.clicked.connect(self.applyClustering)
         self._view.clusteringDock.previewButton.stateChanged.connect(
             self.previewClusters)
 
-        # tracking
+        # tracking dock
         self._view.actionTracker.triggered.connect(self._view.showTrackingDock)
         self._view.trackingDock.applyButton.clicked.connect(self.applyTracking)
+
+        # output dialog
+        self._view.actionOutput.triggered.connect(self._view.callOutputDialog)
     #
     # I/O
     #
@@ -325,9 +328,34 @@ class Controller():
             settings["params"]["is_xy"] = True if settings["params"]["is_xy"].lower() == "yes" else False
             
             print("[DEBUG]\n{}".format(settings))
-            self._model.extractClusters(method=settings["method"], **settings["params"])
+            self._model.createClusterer(method=settings["method"], **settings["params"])
+            self.apply_clustering()
         else:
             self._model.destroyClusterer()
+            self.previewClusters()
+
+    def _apply_clustering_fn(self, progress_callback):
+        for p in self._model.extractClustersGen():
+            progress_callback.emit(p)
+
+    def apply_clustering(self):
+        # activate status bar
+        self._view.statusBar.showMessage("Calculating clusters ...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # TODO: block buttons
+
+        # Pass the function to execute worker task
+        worker = Worker(self._apply_clustering_fn)
+        worker.signals.progress.connect(self.frame_processing_progress)
+        worker.signals.finished.connect(self.clustering_complete)
+        print("[DEBUG] N active threads: {}".format(self.threadpool.activeThreadCount()))
+        self.threadpool.start(worker)
+
+    def clustering_complete(self):
+        self._view.statusBar.showMessage("Clusters calculated")
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
         self.previewClusters()
 
     #
@@ -337,12 +365,36 @@ class Controller():
     def applyTracking(self):
         if self._view.trackingDock.enableProcessing.isChecked():
             settings = self._view.trackingDock.getSettings()
-            self._model.trackClusters(method=settings["method"], **settings["params"])
+            self._model.createTracker(method=settings["method"], **settings["params"])
+            self.apply_tracking()
         else:
-            print("not doing crap")
             self._model.destroyTracker()
+            self.previewClusters()
+
+    def _apply_tracking_fn(self, progress_callback):
+        for p in self._model.trackClustersGen():
+            progress_callback.emit(p)
+
+    def apply_tracking(self):
+        # activate status bar
+        self._view.statusBar.showMessage("Tracking clusters ...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # TODO: block buttons
+
+        # Pass the function to execute worker task
+        worker = Worker(self._apply_tracking_fn)
+        worker.signals.progress.connect(self.frame_processing_progress)
+        worker.signals.finished.connect(self.tracking_complete)
+        print("[DEBUG] N active threads: {}".format(self.threadpool.activeThreadCount()))
+        self.threadpool.start(worker)
+
+    def tracking_complete(self):
+        self._view.statusBar.showMessage("Cluster ID calculated")
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
         self.previewClusters()
-    
+
     #
     # UI UPDATES
     #
@@ -358,6 +410,7 @@ class Controller():
         self._view.actionBackground.setEnabled(enabled)
         self._view.actionCluster.setEnabled(enabled)
         self._view.actionTracker.setEnabled(enabled)
+        self._view.actionOutput.setEnabled(enabled)
         self._view.frameSlider.setEnabled(enabled)
         self._view.frameSpinBox.setEnabled(enabled)
 

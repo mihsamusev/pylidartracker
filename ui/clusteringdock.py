@@ -132,7 +132,7 @@ class AgglomerativeClusteringForm(ClusteringForm):
         self.inputs["is_xy"] = {"label":"only XY:","widget": QtWidgets.QComboBox()}
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["yes","no"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}
-        self.inputs["min_samples"]["widget"].setRange(0, 500)
+        self.inputs["min_samples"]["widget"].setRange(5, 500)
         self.inputs["min_samples"]["widget"].setValue(20)
 
         f_layout = QtWidgets.QFormLayout()
@@ -159,7 +159,7 @@ class DBSCANClusteringForm(ClusteringForm):
         self.inputs["is_xy"] = {"label":"only XY:","widget": QtWidgets.QComboBox()}
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["yes","no"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}
-        self.inputs["min_samples"]["widget"].setRange(0, 500)
+        self.inputs["min_samples"]["widget"].setRange(5, 500)
         self.inputs["min_samples"]["widget"].setValue(20)
         #self.inputs["leaf_size"] = {"label":"leaf size:","widget": QtWidgets.QSpinBox()}
         #self.inputs["leaf_size"]["widget"].setValue(30)
