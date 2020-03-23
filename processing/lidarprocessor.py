@@ -363,6 +363,7 @@ class LidarProcessor():
             # TODO: Guarantee that centroid is calculated on creation
             centroids = [c.centroid for c in clusters]
             self.tracker.update(centroids)
+
             mapping = self.tracker.getInputMapping()
             for j, c in enumerate(clusters):
                 c.id = mapping[j]
@@ -375,4 +376,37 @@ class LidarProcessor():
         for clusters in self.frameClusters:
             for c in clusters:
                 c.id = None
+
+    #
+    # Entire pipeline
+    #
+    def processingGen(self, start_frame, end_frame):
+        if self.clusterer is None or self.tracker is None:
+            return
+
+        self.tracker.restart()#? or just reinit in controller
+        for i in range(0, end_frame + 1):
+            if i < start_frame:
+                continue
+
+            (ts, frame) = self.readNextFrame()
+
+            # apply transform, clipping, bg subtraction
+            pts = self.arrayFromFrame(frame)
+            pts = self.preprocessArray(pts)
+
+            # apply clustering
+            clusters = self.clusterer.cluster(pts)
+
+            # apply tracking
+            centroids = [c.centroid for c in clusters]
+            self.tracker.update(centroids)
+            mapping = self.tracker.getInputMapping()
+            for j, c in enumerate(clusters):
+                c.id = mapping[j]
+
+            # output frame number, time, tracked clusters an dprogress
+            p = (i-start_frame+1)*100/(end_frame - start_frame)
+            yield (i, ts, clusters, p)
+
 

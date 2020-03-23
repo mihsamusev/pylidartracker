@@ -104,29 +104,36 @@ class CentroidTracker():
             # equal or greater than the number of input centroids
             # we need to check and see if some of these objects have
             # potentially disappeared
-            if D.shape[0] >= D.shape[1]:
+            
+            # TODO how to adress this?
+            # if D.shape[0] >= D.shape[1]:
                 # loop over the unused row indexes
-                for row in unusedRows:
-                    # grab the object ID for the corresponding row
-                    # index and increment the disappeared counter
-                    objectID = objectIDs[row]
-                    self.disappeared[objectID] += 1
-                    # check to see if the number of consecutive
-                    # frames the object has been marked "disappeared"
-                    # for warrants deregistering the object
-                    if self.disappeared[objectID] > self.max_missing:
-                        self.deregister(objectID)
+            for row in unusedRows:
+                # grab the object ID for the corresponding row
+                # index and increment the disappeared counter
+                objectID = objectIDs[row]
+                self.disappeared[objectID] += 1
+                # check to see if the number of consecutive
+                # frames the object has been marked "disappeared"
+                # for warrants deregistering the object
+                if self.disappeared[objectID] > self.max_missing:
+                    self.deregister(objectID)
 
             # otherwise, if the number of input centroids is greater
             # than the number of existing object centroids we need to
             # register each new input centroid as a trackable object
-            else:
-                for col in unusedCols:
-                    self.inputMapping[col] = self.nextObjectID
-                    self.register(inputCentroids[col])
+            #else:
+            for col in unusedCols:
+                self.inputMapping[col] = self.nextObjectID
+                self.register(inputCentroids[col])
 
         # return the set of trackable objects
         return self.objects
+
+    def restart(self):
+        self.nextObjectID = 0
+        self.objects = OrderedDict()
+        self.disappeared = OrderedDict()
 
     def getInputMapping(self):
         return self.inputMapping

@@ -11,9 +11,8 @@ Coming soon
 
 ## TODO minimal priority list
 Things that separate us from releasin the first beta
-* finish tracking ui and logic
-* finish output ui and logic
-* check entire pipeline and release first beta
+* finish output writter
+* check entire pipeline for bugs
 * config file validation
 
 ## TODO by category
@@ -34,5 +33,6 @@ Important but can be done before first fully functional BETA
 * On loading new file there is no change in config
 * On load config the UI updates first and Preprocessor updates on a thread, so while preprocessor is updated the ui update turns on the background display and crop box display that are drawn on the non-updated points
 * QHULL breaks when cluster sizes are very low!
-* 
+* During calculation the thread updates values that are used for visualization. Can crash. Either separate visualization and temporary processed object arrays or block screen to disallow unwanted actions. Maybe modal dialog is a good thing here?
+* Similar thing, but when calcualting entire pipeline user is still allowed to operate in docks and thus create/destroy processors that will affect pipeline. So either block unwanted docks/controls or do processing progress through modal dialog.
 

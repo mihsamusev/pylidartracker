@@ -57,22 +57,25 @@ class OutputDialog(QtWidgets.QDialog):
         applyLayoutH = QtWidgets.QHBoxLayout()
         applyLayoutH.addItem(QtWidgets.QSpacerItem(40, 20,
             QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
-        self.applyButton = QtWidgets.QPushButton("Apply")
-        applyLayoutH.addWidget(self.applyButton)
+        self.dialogButtons = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel,
+            QtCore.Qt.Horizontal, self)
+        applyLayoutH.addWidget(self.dialogButtons)
         mainLayoutV.addLayout(applyLayoutH)
 
-        # status and progress
+        '''# status and progress
         self.status = QtWidgets.QLabel("here gonna do status ting")
         mainLayoutV.addWidget(self.status)
 
         self.progressBar = QtWidgets.QProgressBar()
         self.progressBar.setValue(1)
-        mainLayoutV.addWidget(self.progressBar)
+        mainLayoutV.addWidget(self.progressBar)'''
 
     def _connectOwnButtons(self):
         self.method.currentIndexChanged[int].connect(self.comboOptionChanged)
-        self.applyButton.clicked.connect(lambda x: print(self.getSettings()))
-
+        self.dialogButtons.accepted.connect(self.accept)
+        self.dialogButtons.rejected.connect(self.reject)
+    
     def getSettings(self):
         idx = self.method_container_layout.currentIndex()
         out = {
@@ -85,7 +88,6 @@ class OutputDialog(QtWidgets.QDialog):
 
     def comboOptionChanged(self, idx):
         self.method_container_layout.setCurrentIndex(idx)
-
 
 class OutputTypeForm(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -104,9 +106,6 @@ class OutputTypeForm(QtWidgets.QWidget):
             else:
                 state[k] = v["widget"].value()
         return state
-
-    def setState(self):
-        pass
 
 class EditedCloudForm(OutputTypeForm):
     def __init__(self, parent=None):

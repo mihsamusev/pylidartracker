@@ -68,10 +68,11 @@ class Controller():
         self._view.trackingDock.applyButton.clicked.connect(self.applyTracking)
 
         # output dialog
-        self._view.actionOutput.triggered.connect(self._view.callOutputDialog)
+        self._view.actionOutput.triggered.connect(self.generate_output)
     #
     # I/O
     #
+    # input
     def loadProjectConfig(self):
         configpath = self._view.getJSONDialog()
         if not configpath:
@@ -84,12 +85,6 @@ class Controller():
         self.apply_preprocessing()
         
         self._view.set_from_config(configpath)
-
-    def saveProjectConfig(self):
-        configpath = self._view.setJSONDialog()
-        if not configpath:
-            return
-        self._model.save_config(configpath)
 
     def loadFrames(self):
         fname = self._view.getPCAPDialog()
@@ -178,6 +173,47 @@ class Controller():
             self._model.loadFrame()
             progress_callback.emit((n+1)*100/(count))
 
+    # output
+    def saveProjectConfig(self):
+        configpath = self._view.setJSONDialog()
+        if not configpath:
+            return
+        self._model.save_config(configpath)
+
+    def generate_output_fn(self, filename, start_frame, end_frame, progress_callback):
+        self._model.restartBuffering()
+        for (n, ts, clusters, p) in self._model.processingGen(start_frame, end_frame):
+            print(n, ts, clusters, p)
+            #outputWritter.write(n, ts, clusters)
+            progress_callback.emit(p)
+
+    def generate_output(self):
+        settings, accepted = self._view.getOutputDialog(max_frames=300)
+        if not accepted:
+            print("[DEBUG] gon return")
+            return
+
+        # activate status bar
+        self._view.statusBar.showMessage("Writting output ...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # Pass the function to execute
+        worker = Worker(self.generate_output_fn, ".examples/output.pcap",
+            settings["from_frame"], settings["to_frame"])
+        worker.signals.progress.connect(self.output_writting_progress)
+        worker.signals.finished.connect(self.output_writting_complete)
+        
+        # Execute worker
+        self.threadpool.start(worker)
+
+    def output_writting_progress(self, n):
+        self._view.statusProgressBar.setValue(n)
+        # also update ETA and i/n frames
+
+    def output_writting_complete(self):
+        self._view.statusBar.showMessage("Results written to .examples/output.pcap")
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
     #
     # MODEL UPDATING
     #

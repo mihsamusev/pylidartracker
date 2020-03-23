@@ -66,6 +66,7 @@ class LidarView(QtWidgets.QMainWindow):
 
     # TOOLBAR RELATED
     def _createToolBar(self):
+        # TODO: NO LEFT CLICK ALLOWED AMYBE?
         self.toolBar = QtWidgets.QToolBar(parent=self)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.toolBar.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
@@ -169,7 +170,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.menuBar = QtWidgets.QMenuBar(parent=self)
         self.setMenuBar(self.menuBar)
 
-        fileMenu = self.menuBar.addMenu('&File')
+        fileMenu = self.menuBar.addMenu('File')
 
         self.openFileMenu = QtWidgets.QAction('Load PCAP')
         self.openFileMenu.setShortcut('Ctrl+O')
@@ -187,6 +188,24 @@ class LidarView(QtWidgets.QMainWindow):
         self.saveConfigMenu.setStatusTip('Save JSON project configuration file')
         self.saveConfigMenu.setEnabled(False)
         fileMenu.addAction(self.saveConfigMenu)
+
+        editMenu = self.menuBar.addMenu('Edit')
+        self.transformMenu = QtWidgets.QAction('Rotate data')
+        editMenu.addAction(self.transformMenu)
+        self.clippingMenu = QtWidgets.QAction('Clip data')
+        editMenu.addAction(self.clippingMenu)
+        self.subtractionMenu = QtWidgets.QAction('Subtract background')
+        editMenu.addAction(self.subtractionMenu)
+
+        analyzeMenu = self.menuBar.addMenu('Analyze')
+        self.clusterMenu = QtWidgets.QAction('Cluster data')
+        analyzeMenu.addAction(self.clusterMenu)
+        self.trackerMenu = QtWidgets.QAction('Track clusters')
+        analyzeMenu.addAction(self.trackerMenu)
+
+        runMenu = self.menuBar.addMenu('Run')
+        self.outputMenu = QtWidgets.QAction('Generate output')
+        runMenu.addAction(self.outputMenu)
 
     # STATUSBAR RELATED
     def _createStatusBar(self):
@@ -273,9 +292,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
 
-    def callOutputDialog(self):
-        self.outputDialog = OutputDialog(200, self)
-        self.outputDialog.show()
+    def getOutputDialog(self, max_frames):
+        outputDialog = OutputDialog(max_frames, self)
+        result = outputDialog.exec_()
+        return (outputDialog.getSettings(), result == QtWidgets.QDialog.Accepted)
+
 
 if __name__ == "__main__":
     # for debugging
