@@ -1,6 +1,10 @@
 from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 import numpy as np
 from ui.uithread import Worker
+import json
+from processing.outputwritter import OutputWriter
+import os
 
 class Controller():
     def __init__(self, view, model):
@@ -180,11 +184,10 @@ class Controller():
             return
         self._model.save_config(configpath)
 
-    def generate_output_fn(self, filename, start_frame, end_frame, progress_callback):
+    def generate_output_fn(self, start_frame, end_frame, progress_callback):
         self._model.restartBuffering()
         for (n, ts, clusters, p) in self._model.processingGen(start_frame, end_frame):
-            print(n, ts, clusters, p)
-            #outputWritter.write(n, ts, clusters)
+            self.outputWritter.add(n, ts, clusters)
             progress_callback.emit(p)
 
     def generate_output(self):
@@ -193,12 +196,21 @@ class Controller():
             print("[DEBUG] gon return")
             return
 
+        fname, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self._view, 'Save File','',"All Files (*)"))
+        if not fname:
+            print("[DEBUG] gon return")
+            return
+
+        self.outputWritter = OutputWriter(fname,
+            outputFormat=settings["params"]["file_format"])
+
         # activate status bar
         self._view.statusBar.showMessage("Writting output ...")
         self._view.statusProgressBar.setVisible(True)
 
         # Pass the function to execute
-        worker = Worker(self.generate_output_fn, ".examples/output.pcap",
+        worker = Worker(self.generate_output_fn,
             settings["from_frame"], settings["to_frame"])
         worker.signals.progress.connect(self.output_writting_progress)
         worker.signals.finished.connect(self.output_writting_complete)
@@ -211,9 +223,10 @@ class Controller():
         # also update ETA and i/n frames
 
     def output_writting_complete(self):
-        self._view.statusBar.showMessage("Results written to .examples/output.pcap")
+        self._view.statusBar.showMessage("Results written to file")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
+        self.outputWritter.close()
     #
     # MODEL UPDATING
     #

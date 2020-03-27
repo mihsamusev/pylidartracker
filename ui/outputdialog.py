@@ -31,7 +31,7 @@ class OutputDialog(QtWidgets.QDialog):
         f_layout.addRow(QtWidgets.QLabel("to frame"), self.to_frame)
 
         self.method = QtWidgets.QComboBox()
-        [self.method.addItem(i) for i in ["tracked_clusters","edited_point_clouds"]]
+        [self.method.addItem(i) for i in ["tracked_clusters"]] #,"edited_point_clouds"]
         f_layout.addRow(QtWidgets.QLabel("output type"), self.method)
 
         spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
@@ -136,9 +136,9 @@ class TrackedClustersForm(OutputTypeForm):
         h_layout = QtWidgets.QHBoxLayout(self)
         # create dictionary with names labels and widgets
         self.inputs["file_format"] = {"label":"file format:","widget": QtWidgets.QComboBox()}
-        [self.inputs["file_format"]["widget"].addItem(i) for i in ["csv","json","txt"]]
-        self.inputs["include_boxes"] = {"label":"include cluster boxes:","widget": QtWidgets.QComboBox()}
-        [self.inputs["include_boxes"]["widget"].addItem(i) for i in ["yes","no"]]
+        [self.inputs["file_format"]["widget"].addItem(i) for i in ["json","csv"]]
+        #self.inputs["include_boxes"] = {"label":"include cluster boxes:","widget": QtWidgets.QComboBox()}
+        #[self.inputs["include_boxes"]["widget"].addItem(i) for i in ["yes","no"]]
 
         f_layout = QtWidgets.QFormLayout()
         h_layout.addLayout(f_layout)

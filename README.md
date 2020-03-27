@@ -11,14 +11,13 @@ Coming soon
 
 ## TODO minimal priority list
 Things that separate us from releasin the first beta
-* finish output writter
-* check entire pipeline for bugs
-* config file validation
+* check entire pipeline for known bugs
+* create config file validation
 
 ## TODO by category
 Important but can be done before first fully functional BETA
 * ### UI
-+ create status bar messages of last action and current program state (fx, which pre-processors are active)
++ create status bar messages of last action and current program state (fx, which pre-processors are up to date)
 * ### Testing
 + write unit tests, integrate tests into commits, show pass / fail flag
 + perform user-tests to optimize the user interface layout and detect bugs

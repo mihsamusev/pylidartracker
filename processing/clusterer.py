@@ -16,8 +16,25 @@ class Cluster():
         self.points = points
         self.size = points.shape[0]
         self.centroid = np.mean(self.points, axis=0)
-        self.bounding_box = None
+        self.bounding_box = []
         self.id = None
+
+    def get_json(self):
+        box = self.bounding_box
+        if not isinstance(self.bounding_box, list):
+            box = np.asarray(self.bounding_box)
+        out = {
+            "id": self.id,
+            "x": float(self.centroid[0]),
+            "y": float(self.centroid[1]),
+            "size": self.size,
+            "bounding_box": box}
+        return out
+
+    def get_csv(self):
+        out = "{:<5d}, {:<10.3f}, {:<10.3f}, {:<10d}, {}".format(
+            self.id, self.centroid[0], self.centroid[1], self.size, self.bounding_box
+        )
 
     def getAABB(self, is_3d=True):
         xmax, ymax, zmax = np.max(self.points, axis=0)

@@ -124,7 +124,7 @@ class AgglomerativeClusteringForm(ClusteringForm):
         h_layout = QtWidgets.QHBoxLayout(self)
         # create dictionary with names labels and widgets
         self.inputs["search_radius"] = {"label":"search radius:","widget": QtWidgets.QDoubleSpinBox()}
-        self.inputs["search_radius"]["widget"].setValue(0.1)
+        self.inputs["search_radius"]["widget"].setValue(0.5)
         self.inputs["search_radius"]["widget"].setRange(0.0, 2.0)
         self.inputs["search_radius"]["widget"].setSingleStep(0.1)
         self.inputs["linkage"] = {"label":"linkage type:","widget": QtWidgets.QComboBox()}
@@ -133,7 +133,7 @@ class AgglomerativeClusteringForm(ClusteringForm):
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["yes","no"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}
         self.inputs["min_samples"]["widget"].setRange(5, 500)
-        self.inputs["min_samples"]["widget"].setValue(20)
+        self.inputs["min_samples"]["widget"].setValue(30)
 
         f_layout = QtWidgets.QFormLayout()
         h_layout.addLayout(f_layout)
@@ -153,14 +153,14 @@ class DBSCANClusteringForm(ClusteringForm):
         h_layout = QtWidgets.QHBoxLayout(self)
         # create dictionary with names labels and widgets
         self.inputs["search_radius"] = {"label":"search radius:","widget": QtWidgets.QDoubleSpinBox()}
-        self.inputs["search_radius"]["widget"].setValue(0.1)
+        self.inputs["search_radius"]["widget"].setValue(0.5)
         self.inputs["search_radius"]["widget"].setRange(0.0, 2.0)
         self.inputs["search_radius"]["widget"].setSingleStep(0.1)
         self.inputs["is_xy"] = {"label":"only XY:","widget": QtWidgets.QComboBox()}
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["yes","no"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}
         self.inputs["min_samples"]["widget"].setRange(5, 500)
-        self.inputs["min_samples"]["widget"].setValue(20)
+        self.inputs["min_samples"]["widget"].setValue(30)
         #self.inputs["leaf_size"] = {"label":"leaf size:","widget": QtWidgets.QSpinBox()}
         #self.inputs["leaf_size"]["widget"].setValue(30)
 
