@@ -137,9 +137,17 @@ class Controller():
         if not fname:
             return
 
+        # peek how many frames there are
+        self._model.setFilename(fname)
+        max_file_frames = self._model.peek_size()
+        # using dialog window as how many frames would you like to load?
         # read some frames
-        count=100
-        self._maxFrames = count #TODO: dialog for that
+        settings, accepted = self._view.getInputDialog(max_frames=max_file_frames)
+        if not accepted:
+            print("[DEBUG] gon retur with status?")
+            return
+
+        self._maxFrames = settings["to_frame"] - settings["from_frame"]
 
         # activate status bar
         self._view.statusBar.showMessage("Reading point cloud data ...")
@@ -197,7 +205,7 @@ class Controller():
             return
 
         fname, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self._view, 'Save File','',"All Files (*)"))
+            self._view, 'Save File','',"All Files (*)")
         if not fname:
             print("[DEBUG] gon return")
             return

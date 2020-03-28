@@ -12,10 +12,10 @@ from ui.backgrounddock import BackgroundDock
 from ui.clusteringdock import ClusteringDock
 from ui.trackingdock import TrackingDock
 from ui.outputdialog import OutputDialog
+from ui.inputdialog import InputDialog
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
-
 
 class LidarView(QtWidgets.QMainWindow):
     def __init__(self):
@@ -165,6 +165,17 @@ class LidarView(QtWidgets.QMainWindow):
             self, 'Save File','',"JSON Files (*.json)")
         return fname[0]
 
+    # DAILOGS
+    def getOutputDialog(self, max_frames):
+        dlg = OutputDialog(max_frames, self)
+        result = dlg.exec_()
+        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
+
+    def getInputDialog(self, max_frames):
+        dlg = InputDialog(max_frames, self)
+        result = dlg.exec()
+        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
+
     # MENUBAR RELATED
     def _createMenuBar(self):
         self.menuBar = QtWidgets.QMenuBar(parent=self)
@@ -291,12 +302,6 @@ class LidarView(QtWidgets.QMainWindow):
     def _createGraphicsDisplay(self):
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
-
-    def getOutputDialog(self, max_frames):
-        outputDialog = OutputDialog(max_frames, self)
-        result = outputDialog.exec_()
-        return (outputDialog.getSettings(), result == QtWidgets.QDialog.Accepted)
-
 
 if __name__ == "__main__":
     # for debugging
