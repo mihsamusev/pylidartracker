@@ -12,7 +12,12 @@ class Controller():
         self._model = model
         self._connectSignals()
         self._currentFrameIdx = 0
-        self._maxFrames = 0
+
+        self.pcap_filename = None
+        self.config_filename = None
+        self._loaded_frame_count = 0
+        self._pcap_frame_count = 0
+
         self.threadpool = QtCore.QThreadPool()
         self.isLatestTransform = False
 
@@ -20,15 +25,18 @@ class Controller():
         # frame scrolling
         self._view.frameSlider.valueChanged.connect(self.frameChanged)
         self._view.frameSpinBox.valueChanged.connect(self.frameChanged)
+        self._view.actionPlayerRun.triggered.connect(self.playFrameSequence)
+        self._view.actionPlayerForward.triggered.connect(self.moveFrameSequenceForward)
+        self._view.actionPlayerBack.triggered.connect(self.moveFrameSequenceBackward)
 
         # MENUBAR
-        self._view.openFileMenu.triggered.connect(self.on_load_pcap)
+        self._view.openFileMenu.triggered.connect(self.analyze_pcap)
         self._view.saveConfigMenu.triggered.connect(self.saveProjectConfig)
         self._view.loadConfigMenu.triggered.connect(self.loadProjectConfig)
 
         # TOOLBAR
         # load 
-        self._view.actionLoadPCAP.triggered.connect(self.on_load_pcap)
+        self._view.actionLoadPCAP.triggered.connect(self.analyze_pcap)
         
         # transform dock
         self._view.actionTransform.triggered.connect(
@@ -90,82 +98,68 @@ class Controller():
         
         self._view.set_from_config(configpath)
 
-    def loadFrames(self):
-        fname = self._view.getPCAPDialog()
-        if not fname:
-            return
-
-        self._model.setFilename(fname)
-
-        # TODO: can ask which callib file to support more lidars
-        self._model.restartBuffering()
-
-        # read some frames
-        self._maxFrames = 100 
-        self._model.loadNFrames(100)
-
-        # update scroller
-        self.updateDataScrollers()
-        # for flexin visuals
-        self.updateGraphicsView()
-        
-        # unblock other actions
-        self.allowToolbarActions(True)
-        self.allowMenuActions(True)
-
-    def _loadFrames(self, filename, count):
+    def analyze_pcap_fn(self, filename, progress_callback):
         self._model.setFilename(filename)
+        self._pcap_frame_count = self._model.peek_size()
 
-        # TODO: can ask which callib file to support more lidars
-        self._model.restartBuffering()
+    def analyze_pcap(self):
+        # ask for changes if file is loaded
+        if self.pcap_filename is not None: 
+            restart = self._view.getProjectRestartMessage()
+            if not restart:
+                return
 
-        # read some frames
-        self._maxFrames = count
-        self._model.loadNFrames(self._maxFrames)
-
-        # update scroller
-        self.updateDataScrollers()
-        # for flexin visuals
-        self.updateGraphicsView()
-        
-        # unblock other actions
-        self.allowToolbarActions(True)
-        self.allowMenuActions(True)
-
-    def on_load_pcap(self):
+        # get filename
         fname = self._view.getPCAPDialog()
         if not fname:
             return
+
+        # activate status bar
+        self._view.statusBar.showMessage("Counting frames ...")
+        self._view.statusProgressBar.setVisible(True)
+        self._view.statusProgressBar.setRange(0, 0)
 
         # peek how many frames there are
-        self._model.setFilename(fname)
-        max_file_frames = self._model.peek_size()
+        self.pcap_filename = fname
+        worker = Worker(self.analyze_pcap_fn, fname)
+        worker.signals.finished.connect(self.load_frames)
+        
+        # Execute worker
+        self.threadpool.start(worker)
+
+    def load_frames(self):
+        # restore status progress bar
+        self._view.statusProgressBar.setVisible(False)
+        self._view.statusProgressBar.setRange(0, 100)
+
         # using dialog window as how many frames would you like to load?
-        # read some frames
-        settings, accepted = self._view.getInputDialog(max_frames=max_file_frames)
+        settings, accepted = self._view.getInputDialog(
+            max_frames=self._pcap_frame_count)
         if not accepted:
             print("[DEBUG] gon retur with status?")
             return
 
-        self._maxFrames = settings["to_frame"] - settings["from_frame"]
+        self._loaded_frame_count = settings["to_frame"] - settings["from_frame"]
 
         # activate status bar
         self._view.statusBar.showMessage("Reading point cloud data ...")
         self._view.statusProgressBar.setVisible(True)
 
+        # lock controls
+        self._view.enableAllControls(False)
+
         # Pass the function to execute
-        worker = Worker(self.load_frames, fname, self._maxFrames)
+        worker = Worker(self.load_frames_fn, settings["from_frame"], settings["to_frame"])
         worker.signals.progress.connect(self.frame_processing_progress)
         worker.signals.finished.connect(self.frame_loading_complete)
-        
-        # Execute worker
         self.threadpool.start(worker)
 
     def frame_processing_progress(self, n):
         self._view.statusProgressBar.setValue(n)
 
     def frame_loading_complete(self):
-        self._view.statusBar.showMessage("Point clouds loaded")
+        self._view.statusBar.showMessage(
+            "{} point clouds loaded".format(self._loaded_frame_count))
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
 
@@ -173,17 +167,27 @@ class Controller():
         self.updateDataScrollers()
         # for flexin visuals
         self.updateGraphicsView()
+        # reset all processors
+        self._model.resetProcessors()
+        # reset dock parameters
+        self._view.resetAllDocks()
 
-        self.allowToolbarActions(True)
-        self.allowMenuActions(True)
+        # enable locked view controls
+        self._view.enableFrameLoading(True)
+        self._view.enableFrameControls(True)
+        self._view.enableConfigLoading(True)
+        self._view.enablePreprocessing(True)
 
-    def load_frames(self, filename, count, progress_callback):
-        self._model.setFilename(filename)
+    def load_frames_fn(self, from_frame, to_frame, progress_callback):
         self._model.restartBuffering()
-        self._model.resetProcessor()
-        for n in range(count):
-            self._model.loadFrame()
-            progress_callback.emit((n+1)*100/(count))
+        self._model.resetFrameData()
+        for n in range(to_frame):
+            if n < from_frame:
+                self._model.readNextFrame()
+            else:
+                self._model.loadFrame()
+
+            progress_callback.emit((n+1)*100/(to_frame))
 
     # output
     def saveProjectConfig(self):
@@ -261,11 +265,6 @@ class Controller():
         self._view.statusProgressBar.setVisible(False)
 
         self.updateGraphicsView()
-
-        #self.allowToolbarActions(True)
-        #self.allowMenuActions(True)
-
-
     #
     # PLANE FITTING AND TRANSFORM ACTON
     #
@@ -461,26 +460,33 @@ class Controller():
         self._currentFrameIdx = idx
         self.updateGraphicsView()
 
-    def allowToolbarActions(self, enabled=True):
-        self._view.actionTransform.setEnabled(enabled)
-        self._view.actionClipping.setEnabled(enabled)
-        self._view.actionBackground.setEnabled(enabled)
-        self._view.actionCluster.setEnabled(enabled)
-        self._view.actionTracker.setEnabled(enabled)
-        self._view.actionOutput.setEnabled(enabled)
-        self._view.frameSlider.setEnabled(enabled)
-        self._view.frameSpinBox.setEnabled(enabled)
-
-    def allowMenuActions(self, enabled=True):
-        self._view.loadConfigMenu.setEnabled(enabled)
-        self._view.saveConfigMenu.setEnabled(enabled)
-
     def updateDataScrollers(self):
-        self._view.frameSlider.setMaximum(self._maxFrames-1)
+        self._view.frameSlider.setMaximum(self._loaded_frame_count - 1)
         self._view.frameSlider.setValue(self._currentFrameIdx)
-        self._view.frameSpinBox.setMaximum(self._maxFrames-1)
+        self._view.frameSpinBox.setMaximum(self._loaded_frame_count - 1)
         self._view.frameSpinBox.setValue(self._currentFrameIdx)
 
+    def frame_sequence_fn(self):
+        if self._view.player_running and self._currentFrameIdx < self._loaded_frame_count - 1:
+            self.frameChanged(self._currentFrameIdx + 1)
+            QtCore.QTimer.singleShot(100, self.frame_sequence_fn)
+        else:
+            self.finish_playing()
+            return
+    
+    def finish_playing(self):
+        if self._view.player_running:
+            self._view.switchPlayerState()
+
+    def playFrameSequence(self):
+        if self._view.player_running:
+            QtCore.QTimer.singleShot(100, self.frame_sequence_fn)
+
+    def moveFrameSequenceForward(self):
+        self.frameChanged(self._loaded_frame_count - 1)
+
+    def moveFrameSequenceBackward(self):
+        self.frameChanged(0)
     #
     # GRAPHICS UPDATE
     #

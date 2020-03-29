@@ -18,6 +18,9 @@ Things that separate us from releasin the first beta
 Important but can be done before first fully functional BETA
 * ### UI
 + create status bar messages of last action and current program state (fx, which pre-processors are up to date)
++ pack player to a separate class
++ run the app from console with flags for file and config
+* show tick boxes on main window to display bg, clusters, scale point sizes
 * ### Testing
 + write unit tests, integrate tests into commits, show pass / fail flag
 + perform user-tests to optimize the user interface layout and detect bugs
@@ -26,6 +29,7 @@ Important but can be done before first fully functional BETA
 + Way to indexing the pcap file during peeking the number of frames. Indexing is used later to load frames with given offset. Having indexing one can load frames by collecting all the correct packages (right length + port) into one buffer and parse it in one call
 + Create .pcap to HDF5 converter
 + Re-think status quo data structure that was borrowed from another project. Try to optimize it by using low level libraries calling C/C++ like struct.unpack or same np buffer loading functionality. Work with integers until the very exposure of the data to calculation/drawing. Divison cost ads up over the oamount of packet processing we are dealing with
++ Skipping frames should be faster than reading. Current functionality skips frames by reading them and not saving to a list.
 
 ## Known bugs / errors
 * On close there is no dial window asking if you want to save current config
@@ -34,4 +38,5 @@ Important but can be done before first fully functional BETA
 * QHULL breaks when cluster sizes are very low!
 * During calculation the thread updates values that are used for visualization. Can crash. Either separate visualization and temporary processed object arrays or block screen to disallow unwanted actions. Maybe modal dialog is a good thing here?
 * Similar thing, but when calcualting entire pipeline user is still allowed to operate in docks and thus create/destroy processors that will affect pipeline. So either block unwanted docks/controls or do processing progress through modal dialog.
+
 

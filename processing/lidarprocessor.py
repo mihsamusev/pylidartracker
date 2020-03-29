@@ -20,9 +20,8 @@ class LidarProcessor():
         self._timestamps = []
         self._preprocessedArrays = []
         self._preprocessedArraysTemp = []
-        self.bufferStarted = False
+
         self.frameGenerator = None
-        self.frameBuffer = None
 
         self.transformer = None
 
@@ -124,7 +123,13 @@ class LidarProcessor():
             json.dump(config, write_file, indent=4)
             print("Config saved to:\n{0}".format(configpath))
 
-
+    def resetProcessors(self):
+        self.destroyTransformer()
+        self.destroyClipper()
+        self.destroyBgExtractor()
+        self.destroyBgSubtractor()
+        self.destroyClusterer()
+        self.destroyTracker()
     #
     # I/O
     #
@@ -137,10 +142,6 @@ class LidarProcessor():
 
         parser = PcapFrameParser(self.filename)
         self.frameGenerator = parser.generator()
-        #if self.frameBuffer is not None:
-            #self.frameBuffer.stop()
-        #self.frameBuffer = FrameStream(self.frameGenerator).start()
-        #self.bufferStarted = True
 
     def loadNFrames(self, N):
         self._timestamps = []
@@ -167,7 +168,7 @@ class LidarProcessor():
         return parser.peek_size()
 
     # test stuff
-    def resetProcessor(self):
+    def resetFrameData(self):
         self._timestamps = []
         self._originalFrames = []
         self._preprocessedArrays = []
@@ -318,6 +319,7 @@ class LidarProcessor():
             self.bg_subtractor = BackgroundSubtractor.factory(method, **kwargs)
 
     def destroyBgSubtractor(self):
+        self.bg_filename = None
         self.bg_subtractor = None
 
     #

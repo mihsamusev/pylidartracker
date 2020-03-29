@@ -21,8 +21,9 @@ class LidarView(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         # main window
-        self.setWindowTitle("Your favorite LIDAR app")
-        self.resize(800, 600)
+        self.setWindowTitle("LIBTrAna - Lidar based traffic analysis")
+        self.setWindowIcon(QtGui.QIcon("./images/velodyne_hdl.png"))
+        self.setMinimumSize(800,600)
         self.centralWidget = QtWidgets.QWidget(parent=self)
         self.centralWidget.setMinimumSize(QtCore.QSize(400, 300))
         self.mainLayout = QtWidgets.QVBoxLayout(self.centralWidget)
@@ -30,6 +31,7 @@ class LidarView(QtWidgets.QMainWindow):
 
         self._createMenuBar()
         self._createToolBar()
+        self._createToolbarPlayer()
         self._createStatusBar()
         self._createGraphicsDisplay()
         self._createTransformDock()
@@ -37,6 +39,22 @@ class LidarView(QtWidgets.QMainWindow):
         self._createBackgroundDock()
         self._createClusteringDock()
         self._createTrackingDock()
+
+        # startup blocks of functionality
+        self.enableConfigLoading(False)
+        self.enableFrameControls(False)
+        self.enablePreprocessing(False)
+        self.enableClustering(False)
+        self.enableTracking(False)
+        self.enableOuput(False)
+
+        # variables
+        self.player_running = False
+
+        self.connectOwn()
+
+    def connectOwn(self):
+        self.actionPlayerRun.triggered.connect(self.switchPlayerState)
 
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
@@ -64,16 +82,26 @@ class LidarView(QtWidgets.QMainWindow):
             else:
                 self.backgroundDock.reset()
 
+    def resetAllDocks(self):
+        self.transformDock.reset()
+        self.clippingDock.reset()
+        self.backgroundDock.reset()
+
+    #
     # TOOLBAR RELATED
+    #
+
     def _createToolBar(self):
         # TODO: NO LEFT CLICK ALLOWED AMYBE?
         self.toolBar = QtWidgets.QToolBar(parent=self)
+        self.setContextMenuPolicy(QtCore.Qt.NoContextMenu)
         self.addToolBar(QtCore.Qt.TopToolBarArea, self.toolBar)
         self.toolBar.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
         self.toolBar.setMovable(False)
 
         # LOAD
         self.actionLoadPCAP = QtWidgets.QAction(parent=self)
+        self.actionLoadPCAP.setToolTip('Load .pcap point cloud stream file') 
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/velodyne_hdl.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -83,73 +111,98 @@ class LidarView(QtWidgets.QMainWindow):
         # TRANSFORM
         self.toolBar.addSeparator()
         self.actionTransform = QtWidgets.QAction(parent=self)
+        self.actionTransform.setToolTip(
+            "Define new XY plane for the point clouds")
         self.actionTransform.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/transform.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTransform.setIcon(icon)
-        self.actionTransform.setEnabled(False)
         self.toolBar.addAction(self.actionTransform)
 
         # CLIP
         self.actionClipping = QtWidgets.QAction(parent=self)
+        self.actionClipping.setToolTip(
+            "Clip out unnecessary point cloud parts")
         self.actionClipping.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/clipping.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionClipping.setIcon(icon)
-        self.actionClipping.setEnabled(False)
         self.toolBar.addAction(self.actionClipping)
 
         # Background
         self.actionBackground = QtWidgets.QAction(parent=self)
+        self.actionBackground.setToolTip(
+            "Extract and subtract background part of the point clouds")
         self.actionBackground.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/bg_extraction.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionBackground.setIcon(icon)
-        self.actionBackground.setEnabled(False)
         self.toolBar.addAction(self.actionBackground)
 
         # CLUSTER
         self.toolBar.addSeparator()
         self.actionCluster = QtWidgets.QAction(parent=self)
+        self.actionCluster.setToolTip("Calculate point cloud clusters")
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCluster.setIcon(icon)
-        self.actionCluster.setEnabled(False)
         self.toolBar.addAction(self.actionCluster)
 
         # TRACKER
         self.actionTracker = QtWidgets.QAction(parent=self)
+        self.actionTracker.setToolTip("Track point cloud clusters")
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/tracking.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTracker.setIcon(icon)
-        self.actionTracker.setEnabled(False)
         self.toolBar.addAction(self.actionTracker)
 
         # OUTPUT
         self.toolBar.addSeparator()
         self.actionOutput = QtWidgets.QAction(parent=self)
+        self.actionOutput.setToolTip("Generate output file with cluster tracks")
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/output.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionOutput.setIcon(icon)
-        self.actionOutput.setEnabled(False)
         self.toolBar.addAction(self.actionOutput)
 
-        # slider and spin box
+    def _createToolbarPlayer(self):
         self.toolBar.addSeparator()
+        self.actionPlayerBack = QtWidgets.QAction(
+            QtGui.QIcon("./images/player_back.png"),"",self)
+        self.toolBar.addAction(self.actionPlayerBack)
+
+        self.actionPlayerRun = QtWidgets.QAction(
+            QtGui.QIcon("./images/player_run.png"),"",self)
+        self.toolBar.addAction(self.actionPlayerRun)
+
+        self.actionPlayerForward = QtWidgets.QAction(
+            QtGui.QIcon("./images/player_forward.png"),"",self)
+        self.toolBar.addAction(self.actionPlayerForward)
+
         self.frameSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.frameSlider.setFixedWidth(200)
-        self.frameSlider.setEnabled(False)
         self.toolBar.addWidget(self.frameSlider)
         self.frameSpinBox = QtWidgets.QSpinBox()
-        self.frameSpinBox.setEnabled(False)
         self.toolBar.addWidget(self.frameSpinBox)
 
+    def switchPlayerState(self):
+        if self.player_running:
+            self.actionPlayerRun.setIcon(
+                QtGui.QIcon("./images/player_run.png"))
+        else:
+            self.actionPlayerRun.setIcon(
+                QtGui.QIcon("./images/player_pause.png"))
+        self.player_running = not self.player_running
+
+    #
+    # DIALOGS
+    #
     def getPCAPDialog(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Open File','',"PCAP Files (*.pcap)")
@@ -165,7 +218,16 @@ class LidarView(QtWidgets.QMainWindow):
             self, 'Save File','',"JSON Files (*.json)")
         return fname[0]
 
-    # DAILOGS
+    def getProjectRestartMessage(self):
+        box = QtWidgets.QMessageBox()
+        box.setIcon(QtWidgets.QMessageBox.Information)
+        box.setText("Unsaved changes will be lost.\nDo you want to continue?")
+        box.setWindowTitle("Open new PCAP")
+        box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+
+        result = box.exec_()
+        return result == QtWidgets.QMessageBox.Yes
+
     def getOutputDialog(self, max_frames):
         dlg = OutputDialog(max_frames, self)
         result = dlg.exec_()
@@ -176,7 +238,9 @@ class LidarView(QtWidgets.QMainWindow):
         result = dlg.exec()
         return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
 
+    #
     # MENUBAR RELATED
+    #
     def _createMenuBar(self):
         self.menuBar = QtWidgets.QMenuBar(parent=self)
         self.setMenuBar(self.menuBar)
@@ -191,13 +255,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.loadConfigMenu = QtWidgets.QAction('Load config')
         self.loadConfigMenu.setShortcut('Ctrl+L')
         self.loadConfigMenu.setStatusTip('Load JSON project configuration file')
-        self.loadConfigMenu.setEnabled(False)
         fileMenu.addAction(self.loadConfigMenu)
 
         self.saveConfigMenu = QtWidgets.QAction('Save config')
         self.saveConfigMenu.setShortcut('Ctrl+S')
         self.saveConfigMenu.setStatusTip('Save JSON project configuration file')
-        self.saveConfigMenu.setEnabled(False)
         fileMenu.addAction(self.saveConfigMenu)
 
         editMenu = self.menuBar.addMenu('Edit')
@@ -218,16 +280,24 @@ class LidarView(QtWidgets.QMainWindow):
         self.outputMenu = QtWidgets.QAction('Generate output')
         runMenu.addAction(self.outputMenu)
 
+    #
     # STATUSBAR RELATED
+    #
+
     def _createStatusBar(self):
         self.statusBar = QtWidgets.QStatusBar()
         self.setStatusBar(self.statusBar)
         self.statusBar.showMessage("Load .pcap file to start...")
-
+        #self.statusBarMessage = QtWidgets.QLabel("Load .pcap file to start...")
+        #self.statusBar.addPermanentWidget(self.statusBarMessage)
         self.statusProgressBar = QtWidgets.QProgressBar()
         self.statusProgressBar.setValue(0)
         self.statusProgressBar.setVisible(False)
         self.statusBar.addPermanentWidget(self.statusProgressBar)
+
+    #
+    # DOCKS
+    #
 
     def _createTransformDock(self):
         self.transformDock = TransformDock(parent=self)
@@ -302,6 +372,51 @@ class LidarView(QtWidgets.QMainWindow):
     def _createGraphicsDisplay(self):
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
+
+# enables/disables
+    def enableAllControls(self, enabled=True):
+        self.enableFrameLoading(enabled)
+        self.enableFrameControls(enabled)
+        self.enableConfigLoading(enabled)
+        self.enablePreprocessing(enabled)
+        self.enableClustering(enabled)
+        self.enableTracking(enabled)
+        self.enableOuput(enabled)
+
+    def enableFrameLoading(self, enabled=True):
+        self.actionLoadPCAP.setEnabled(enabled)
+        self.openFileMenu.setEnabled(enabled)
+
+    def enableConfigLoading(self, enabled=True):
+        self.loadConfigMenu.setEnabled(enabled)
+        self.saveConfigMenu.setEnabled(enabled)
+
+    def enableFrameControls(self, enabled=True):
+        self.actionPlayerBack.setEnabled(enabled)
+        self.actionPlayerRun.setEnabled(enabled)
+        self.actionPlayerForward.setEnabled(enabled)
+        self.frameSlider.setEnabled(enabled)
+        self.frameSpinBox.setEnabled(enabled)
+
+    def enablePreprocessing(self, enabled=True):
+        self.actionTransform.setEnabled(enabled)
+        self.actionClipping.setEnabled(enabled)
+        self.actionBackground.setEnabled(enabled)
+        self.transformMenu.setEnabled(enabled)
+        self.clippingMenu.setEnabled(enabled)
+        self.subtractionMenu.setEnabled(enabled)
+
+    def enableClustering(self, enabled=True):
+        self.actionCluster.setEnabled(enabled)
+        self.clusterMenu.setEnabled(enabled)
+
+    def enableTracking(self, enabled=True):
+        self.actionTracker.setEnabled(enabled)
+        self.trackerMenu.setEnabled(enabled)
+
+    def enableOuput(self, enabled=True):
+        self.actionOutput.setEnabled(enabled)
+        self.outputMenu.setEnabled(enabled)
 
 if __name__ == "__main__":
     # for debugging
