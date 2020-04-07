@@ -14,6 +14,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
 
     def initView(self):
         self.setWindowTitle("Background subtraction")
+        self.setFeatures(super().NoDockWidgetFeatures)
         self.setAutoFillBackground(False)
         self.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
@@ -177,7 +178,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
 
         if validPath or extractor is not None:
             self.previewButton.setEnabled(True)
-            self.previewButton.setChecked(True)
+            self.previewButton.setChecked(False)
             if subtractor is not None:
                 self.enableSubtraction.setChecked(True)
                 self.radiusBox.setValue(subtractor["params"]["search_radius"])

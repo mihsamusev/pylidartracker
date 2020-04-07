@@ -28,7 +28,9 @@ class LidarView(QtWidgets.QMainWindow):
         self.centralWidget.setMinimumSize(QtCore.QSize(400, 300))
         self.mainLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.setCentralWidget(self.centralWidget)
-
+        
+        self.setDockOptions(QtGui.QMainWindow.AnimatedDocks | QtGui.QMainWindow.AllowTabbedDocks)
+        
         self._createMenuBar()
         self._createToolBar()
         self._createToolbarPlayer()
@@ -39,6 +41,13 @@ class LidarView(QtWidgets.QMainWindow):
         self._createBackgroundDock()
         self._createClusteringDock()
         self._createTrackingDock()
+
+        self.docks = [
+            (self.transformDock, self.actionTransform),
+            (self.clippingDock, self.actionClipping),
+            (self.backgroundDock, self.actionBackground),
+            (self.clusteringDock, self.actionCluster),
+            (self.trackingDock, self.actionTracker)]
 
         # startup blocks of functionality
         self.enableConfigLoading(False)
@@ -146,6 +155,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.toolBar.addSeparator()
         self.actionCluster = QtWidgets.QAction(parent=self)
         self.actionCluster.setToolTip("Calculate point cloud clusters")
+        self.actionCluster.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -155,6 +165,7 @@ class LidarView(QtWidgets.QMainWindow):
         # TRACKER
         self.actionTracker = QtWidgets.QAction(parent=self)
         self.actionTracker.setToolTip("Track point cloud clusters")
+        self.actionTracker.setCheckable(True)
         icon = QtGui.QIcon()
         icon.addPixmap(QtGui.QPixmap("./images/tracking.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
@@ -306,12 +317,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.transformDock)
 
     def showTransformDock(self):
+        self.hideAllDocks()
         if not self.transformDock.isVisible():
             self.transformDock.setVisible(True)
             self.transformDock.setEnabled(True)
-        else:
-            self.transformDock.setVisible(False)
-            self.transformDock.setEnabled(False)
+            self.actionTransform.setChecked(True)
 
     def _createClippingDock(self):
         self.clippingDock = ClippingDock(parent=self)
@@ -320,12 +330,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.clippingDock)
 
     def showClippingDock(self):
+        self.hideAllDocks()
         if not self.clippingDock.isVisible():
             self.clippingDock.setVisible(True)
             self.clippingDock.setEnabled(True)
-        else:
-            self.clippingDock.setVisible(False)
-            self.clippingDock.setEnabled(False)
+            self.actionClipping.setChecked(True)
 
     def _createClusteringDock(self):
         self.clusteringDock = ClusteringDock(parent=self)
@@ -334,12 +343,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.clusteringDock)
 
     def showClusteringDock(self):
+        self.hideAllDocks()
         if not self.clusteringDock.isVisible():
             self.clusteringDock.setVisible(True)
             self.clusteringDock.setEnabled(True)
-        else:
-            self.clusteringDock.setVisible(False)
-            self.clusteringDock.setEnabled(False)
+            self.actionCluster.setChecked(True)
 
     def _createBackgroundDock(self):
         self.backgroundDock = BackgroundDock(parent=self)
@@ -348,12 +356,11 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.backgroundDock)
 
     def showBackgroundDock(self):
+        self.hideAllDocks()
         if not self.backgroundDock.isVisible():
             self.backgroundDock.setVisible(True)
             self.backgroundDock.setEnabled(True)
-        else:
-            self.backgroundDock.setVisible(False)
-            self.backgroundDock.setEnabled(False)
+            self.actionBackground.setChecked(True)
 
     def _createTrackingDock(self):
         self.trackingDock = TrackingDock(parent=self)
@@ -362,16 +369,21 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.trackingDock)
 
     def showTrackingDock(self):
+        self.hideAllDocks()
         if not self.trackingDock.isVisible():
             self.trackingDock.setVisible(True)
             self.trackingDock.setEnabled(True)
-        else:
-            self.trackingDock.setVisible(False)
-            self.trackingDock.setEnabled(False)
+            self.actionTracker.setChecked(True)
 
     def _createGraphicsDisplay(self):
         self.graphicsView = LidarGraphicsView()
         self.mainLayout.addWidget(self.graphicsView)
+
+    def hideAllDocks(self):
+        for dock, action in self.docks:
+            dock.setVisible(False)
+            dock.setEnabled(False)
+            action.setChecked(False)
 
 # enables/disables
     def enableAllControls(self, enabled=True):

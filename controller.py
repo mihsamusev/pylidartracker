@@ -12,6 +12,7 @@ class Controller():
         self._model = model
         self._connectSignals()
         self._currentFrameIdx = 0
+        self._scrool_time = 100
 
         self.pcap_filename = None
         self.config_filename = None
@@ -19,7 +20,6 @@ class Controller():
         self._pcap_frame_count = 0
 
         self.threadpool = QtCore.QThreadPool()
-        self.isLatestTransform = False
 
     def _connectSignals(self):
         # frame scrolling
@@ -178,6 +178,8 @@ class Controller():
         self._view.enableConfigLoading(True)
         self._view.enablePreprocessing(True)
 
+        self._view.enableClustering(True)
+
     def load_frames_fn(self, from_frame, to_frame, progress_callback):
         self._model.restartBuffering()
         self._model.resetFrameData()
@@ -203,7 +205,7 @@ class Controller():
             progress_callback.emit(p)
 
     def generate_output(self):
-        settings, accepted = self._view.getOutputDialog(max_frames=300)
+        settings, accepted = self._view.getOutputDialog(max_frames=self._pcap_frame_count-1)
         if not accepted:
             print("[DEBUG] gon return")
             return
@@ -247,6 +249,10 @@ class Controller():
             progress_callback.emit(p)
 
     def apply_preprocessing(self):
+        # disable controls
+        self.finish_playing()
+        self._view.enableAllControls(False)
+
         # activate status bar
         self._view.statusBar.showMessage("Applying preprocessing ...")
         self._view.statusProgressBar.setVisible(True)
@@ -265,6 +271,16 @@ class Controller():
         self._view.statusProgressBar.setVisible(False)
 
         self.updateGraphicsView()
+
+        self._view.enableFrameLoading(True)
+        self._view.enableFrameControls(True)
+        self._view.enableConfigLoading(True)
+        self._view.enablePreprocessing(True)
+
+        self._view.enableClustering(True)
+
+
+
     #
     # PLANE FITTING AND TRANSFORM ACTON
     #
@@ -469,7 +485,7 @@ class Controller():
     def frame_sequence_fn(self):
         if self._view.player_running and self._currentFrameIdx < self._loaded_frame_count - 1:
             self.frameChanged(self._currentFrameIdx + 1)
-            QtCore.QTimer.singleShot(100, self.frame_sequence_fn)
+            QtCore.QTimer.singleShot(self._scrool_time, self.frame_sequence_fn)
         else:
             self.finish_playing()
             return
@@ -480,7 +496,7 @@ class Controller():
 
     def playFrameSequence(self):
         if self._view.player_running:
-            QtCore.QTimer.singleShot(100, self.frame_sequence_fn)
+            QtCore.QTimer.singleShot(self._scrool_time, self.frame_sequence_fn)
 
     def moveFrameSequenceForward(self):
         self.frameChanged(self._loaded_frame_count - 1)

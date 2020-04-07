@@ -11,6 +11,7 @@ class TrackingDock(QtWidgets.QDockWidget):
 
     def initView(self):
         self.setWindowTitle("Cluster tracking")
+        self.setFeatures(super().NoDockWidgetFeatures)
         self.setAutoFillBackground(False)
         self.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
@@ -74,6 +75,12 @@ class TrackingDock(QtWidgets.QDockWidget):
         # bottom spacer 
         mainLayoutV.addItem(QtWidgets.QSpacerItem(20, 40, 
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+
+    def set_from_config(self):
+        pass
+
+    def reset(self):
+        pass
 
     def _connectOwnButtons(self):
         self.method.currentIndexChanged[int].connect(self.comboOptionChanged)

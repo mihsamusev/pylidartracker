@@ -18,7 +18,7 @@ class ClippingDock(QtWidgets.QDockWidget):
 
     def initView(self):
         self.setWindowTitle("Data clipping")
-
+        self.setFeatures(super().NoDockWidgetFeatures)
         self.setAutoFillBackground(False)
         self.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
@@ -141,7 +141,7 @@ class ClippingDock(QtWidgets.QDockWidget):
         self.zMaxBox.setValue(z_range[1])
         self.addxDSB.setValue(1.0)
         self.addyDSB.setValue(1.0)
-        self.displayCropBox.setChecked(True)
+        self.displayCropBox.setChecked(False)
         self.inverseCropping.setChecked(inverse)
 
     def reset(self):

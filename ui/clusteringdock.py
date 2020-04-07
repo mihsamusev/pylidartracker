@@ -11,6 +11,7 @@ class ClusteringDock(QtWidgets.QDockWidget):
 
     def initView(self):
         self.setWindowTitle("Clustering")
+        self.setFeatures(super().NoDockWidgetFeatures)
         self.setAutoFillBackground(False)
         self.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)
@@ -55,7 +56,7 @@ class ClusteringDock(QtWidgets.QDockWidget):
         widget = DBSCANClusteringForm()
         self.method_container_layout.addWidget(widget)
         self.cluster_forms.append(widget)
-
+        
         h_layout = QtWidgets.QHBoxLayout()
         h_layout.addItem(QtWidgets.QSpacerItem(
             40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
@@ -74,6 +75,12 @@ class ClusteringDock(QtWidgets.QDockWidget):
         # bottom spacer 
         mainLayoutV.addItem(QtWidgets.QSpacerItem(20, 40, 
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+
+    def set_from_config(self):
+        pass
+
+    def reset(self):
+        pass
 
     def _connectOwnButtons(self):
         self.method.currentIndexChanged[int].connect(self.comboOptionChanged)

@@ -4,6 +4,7 @@ class TransformDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Coordinate transformation")
+        self.setFeatures(super().NoDockWidgetFeatures)
         self.setAutoFillBackground(False)
         self.setAllowedAreas(
             QtCore.Qt.LeftDockWidgetArea|QtCore.Qt.RightDockWidgetArea)

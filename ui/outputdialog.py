@@ -29,6 +29,9 @@ class OutputDialog(QtWidgets.QDialog):
         self.to_frame.setRange(0, self.max_frames)
         self.to_frame.setValue(self.max_frames)
         f_layout.addRow(QtWidgets.QLabel("to frame"), self.to_frame)
+        f_layout.addRow(
+            QtWidgets.QLabel("total frames"),
+            QtWidgets.QLabel(str(self.max_frames)))
 
         self.method = QtWidgets.QComboBox()
         [self.method.addItem(i) for i in ["tracked_clusters"]] #,"edited_point_clouds"]
