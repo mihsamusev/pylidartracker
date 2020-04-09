@@ -26,6 +26,8 @@ class ClippingDock(QtWidgets.QDockWidget):
         
         # set central widget and main layout
         self.centralWidget = QtWidgets.QWidget()
+        self.centralWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(self.centralWidget)
         self.mainLayoutV = QtWidgets.QVBoxLayout(self.centralWidget)
 
@@ -132,7 +134,6 @@ class ClippingDock(QtWidgets.QDockWidget):
         self.mainLayoutV.addItem(self.bottomSpacerV)
 
     def set_from_config(self, polygon, z_range, inverse):
-        
         self.enableCropping.setChecked(True)
         self.displayCropBox.setChecked(False)
                 
@@ -141,7 +142,7 @@ class ClippingDock(QtWidgets.QDockWidget):
         self.zMaxBox.setValue(z_range[1])
         self.addxDSB.setValue(1.0)
         self.addyDSB.setValue(1.0)
-        self.displayCropBox.setChecked(False)
+        self.displayCropBox.setChecked(True)
         self.inverseCropping.setChecked(inverse)
 
     def reset(self):

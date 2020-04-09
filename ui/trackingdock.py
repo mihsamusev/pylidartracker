@@ -3,6 +3,7 @@ import sys
 
 class TrackingDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
+        self.methods = ["nearest_neigbour"]
         super().__init__(parent)
 
         # init view and callbacks
@@ -19,6 +20,8 @@ class TrackingDock(QtWidgets.QDockWidget):
 
         # set central widget and main layout
         centralWidget = QtWidgets.QWidget()
+        centralWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(centralWidget)
         mainLayoutV = QtWidgets.QVBoxLayout(centralWidget)
 
@@ -35,7 +38,7 @@ class TrackingDock(QtWidgets.QDockWidget):
         #
         layout = QtWidgets.QHBoxLayout()
         self.method = QtWidgets.QComboBox()
-        [self.method.addItem(i) for i in ["nearest_neigbour"]] # ,"kalman filter"
+        [self.method.addItem(i) for i in self.methods] # ,"kalman filter"
         layout.addWidget(QtWidgets.QLabel("method:"))
         layout.addWidget(self.method)
         layout.addItem(QtWidgets.QSpacerItem(40, 20,
@@ -57,12 +60,12 @@ class TrackingDock(QtWidgets.QDockWidget):
         #self.method_container_layout.addWidget(widget)
         #self.method_forms.append(widget)
 
-        h_layout = QtWidgets.QHBoxLayout()
-        h_layout.addItem(QtWidgets.QSpacerItem(
-            40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
-        self.previewButton = QtWidgets.QCheckBox("Display tracks")
-        h_layout.addWidget(self.previewButton)
-        mainLayoutV.addLayout(h_layout)
+        #h_layout = QtWidgets.QHBoxLayout()
+        #h_layout.addItem(QtWidgets.QSpacerItem(
+            #40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum))
+        #self.previewButton = QtWidgets.QCheckBox("Display tracks")
+        #h_layout.addWidget(self.previewButton)
+        #mainLayoutV.addLayout(h_layout)
         
         # apply button
         applyLayoutH = QtWidgets.QHBoxLayout()
@@ -76,15 +79,20 @@ class TrackingDock(QtWidgets.QDockWidget):
         mainLayoutV.addItem(QtWidgets.QSpacerItem(20, 40, 
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
 
-    def set_from_config(self):
-        pass
+    def set_from_config(self, method, params):
+        self.enableProcessing.setChecked(True)
+        idx = self.methods.index(method)
+        self.method.setCurrentIndex(idx)
+        self.method_forms[idx].set_from_config(**params)
 
     def reset(self):
-        pass
+        self.enableProcessing.setChecked(False)
+        self.method.setCurrentIndex(0)
+        self.method_forms[0].reset()
 
     def _connectOwnButtons(self):
         self.method.currentIndexChanged[int].connect(self.comboOptionChanged)
-        self.enableProcessing.clicked.connect(self.toggleProcessing)
+        self.enableProcessing.toggled.connect(self.toggleProcessing)
 
     def getSettings(self):
         idx = self.method_container_layout.currentIndex()
@@ -119,9 +127,6 @@ class MethodForm(QtWidgets.QWidget):
                 state[k] = v["widget"].value()
         return state
 
-    def setState(self):
-        pass
-
 class NearestNeighbourForm(MethodForm):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -132,7 +137,7 @@ class NearestNeighbourForm(MethodForm):
         # create dictionary with names labels and widgets
         self.inputs["max_missing"] = {"label":"max missing:","widget": QtWidgets.QSpinBox()}
         self.inputs["max_missing"]["widget"].setRange(1, 50)
-        self.inputs["max_missing"]["widget"].setValue(5)
+        self.inputs["max_missing"]["widget"].setValue(3)
 
         f_layout = QtWidgets.QFormLayout()
         h_layout.addLayout(f_layout)
@@ -142,6 +147,12 @@ class NearestNeighbourForm(MethodForm):
         spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Minimum)
         h_layout.addItem(spacer)
+
+    def set_from_config(self, max_missing=3):
+        self.inputs["max_missing"]["widget"].setValue(max_missing)
+
+    def reset(self):
+        self.inputs["max_missing"]["widget"].setValue(3)
 
 if __name__ == '__main__':
     import sys
@@ -153,9 +164,34 @@ if __name__ == '__main__':
     centralWidget.setMinimumSize(QtCore.QSize(400, 300))
     mainLayout = QtWidgets.QVBoxLayout(centralWidget)
     win.setCentralWidget(centralWidget)
-    
+
+    # config testing
+    hlayout = QtWidgets.QHBoxLayout()
+    mainLayout.addLayout(hlayout)
+    get_config = QtWidgets.QPushButton("get config")
+    hlayout.addWidget(get_config)
+    reset_config = QtWidgets.QPushButton("reset config")
+    hlayout.addWidget(reset_config)
+    set_config = QtWidgets.QPushButton("set config")
+    hlayout.addWidget(set_config)
+
     dock = TrackingDock(parent=win)
-    dock.applyButton.clicked.connect(lambda x: print(dock.getSettings()))
+    def test_get_config():
+        print(dock.getSettings())
+
+    def test_set_config():
+        settings = {
+            "method": "nearest_neigbour",
+            "params": {
+                "max_missing": 1
+            }
+        }
+        dock.set_from_config(settings["method"], settings["params"])
+    # connect
+    reset_config.clicked.connect(dock.reset)
+    get_config.clicked.connect(test_get_config)
+    set_config.clicked.connect(test_set_config)
+
     win.addDockWidget(QtCore.Qt.DockWidgetArea(2), dock)
     win.show()
     sys.exit(app.exec_())

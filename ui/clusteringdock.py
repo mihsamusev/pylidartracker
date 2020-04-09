@@ -3,6 +3,7 @@ import sys
 
 class ClusteringDock(QtWidgets.QDockWidget):
     def __init__(self, parent=None):
+        self.methods = ["naive","dbscan"]
         super().__init__(parent)
 
         # init view and callbacks
@@ -19,6 +20,8 @@ class ClusteringDock(QtWidgets.QDockWidget):
 
         # set central widget and main layout
         centralWidget = QtWidgets.QWidget()
+        centralWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(centralWidget)
         mainLayoutV = QtWidgets.QVBoxLayout(centralWidget)
 
@@ -35,7 +38,7 @@ class ClusteringDock(QtWidgets.QDockWidget):
         #
         layout = QtWidgets.QHBoxLayout()
         self.method = QtWidgets.QComboBox()
-        [self.method.addItem(i) for i in ["naive","dbscan"]]
+        [self.method.addItem(i) for i in self.methods]
         layout.addWidget(QtWidgets.QLabel("method:"))
         layout.addWidget(self.method)
         layout.addItem(QtWidgets.QSpacerItem(40, 20,
@@ -46,16 +49,16 @@ class ClusteringDock(QtWidgets.QDockWidget):
         groupLayoutV.addLayout(self.method_container_layout)
 
         # clusters
-        self.cluster_forms = []
+        self.method_forms = []
         # agglomerative cluster
         widget = AgglomerativeClusteringForm()
         self.method_container_layout.addWidget(widget)
-        self.cluster_forms.append(widget)
+        self.method_forms.append(widget)
 
         # DBSCAN cluster
         widget = DBSCANClusteringForm()
         self.method_container_layout.addWidget(widget)
-        self.cluster_forms.append(widget)
+        self.method_forms.append(widget)
         
         h_layout = QtWidgets.QHBoxLayout()
         h_layout.addItem(QtWidgets.QSpacerItem(
@@ -76,21 +79,28 @@ class ClusteringDock(QtWidgets.QDockWidget):
         mainLayoutV.addItem(QtWidgets.QSpacerItem(20, 40, 
             QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
 
-    def set_from_config(self):
-        pass
+    def set_from_config(self, method, params):
+        self.enableProcessing.setChecked(True)
+        self.previewButton.setChecked(False)
+        idx = self.methods.index(method)
+        self.method.setCurrentIndex(idx)
+        self.method_forms[idx].set_from_config(**params)
 
     def reset(self):
-        pass
+        self.enableProcessing.setChecked(False)
+        self.previewButton.setChecked(False)
+        self.method.setCurrentIndex(0)
+        self.method_forms[0].reset()
 
     def _connectOwnButtons(self):
         self.method.currentIndexChanged[int].connect(self.comboOptionChanged)
-        self.enableProcessing.clicked.connect(self.toggleProcessing)
+        self.enableProcessing.toggled.connect(self.toggleProcessing)
 
     def getSettings(self):
         idx = self.method_container_layout.currentIndex()
         out = {
             "method": self.method.currentText(),
-            "params": self.cluster_forms[idx].getState()
+            "params": self.method_forms[idx].getState()
         }
         return out
 
@@ -119,11 +129,9 @@ class ClusteringForm(QtWidgets.QWidget):
                 state[k] = v["widget"].value()
         return state
 
-    def setState(self):
-        pass
-
 class AgglomerativeClusteringForm(ClusteringForm):
     def __init__(self, parent=None):
+        self.linkage_types = ["single","complete","ward"]
         super().__init__(parent)
 
     def initView(self):
@@ -135,12 +143,14 @@ class AgglomerativeClusteringForm(ClusteringForm):
         self.inputs["search_radius"]["widget"].setRange(0.0, 2.0)
         self.inputs["search_radius"]["widget"].setSingleStep(0.1)
         self.inputs["linkage"] = {"label":"linkage type:","widget": QtWidgets.QComboBox()}
-        [self.inputs["linkage"]["widget"].addItem(i) for i in ["single","complete","ward"]]
+        [self.inputs["linkage"]["widget"].addItem(i) for i in self.linkage_types]
         self.inputs["is_xy"] = {"label":"only XY:","widget": QtWidgets.QComboBox()}
         [self.inputs["is_xy"]["widget"].addItem(i) for i in ["yes","no"]]
         self.inputs["min_samples"] = {"label":"min samples:","widget": QtWidgets.QSpinBox()}
         self.inputs["min_samples"]["widget"].setRange(5, 500)
         self.inputs["min_samples"]["widget"].setValue(30)
+        #self.inputs["leaf_size"] = {"label":"leaf size:","widget": QtWidgets.QSpinBox()}
+        #self.inputs["leaf_size"]["widget"].setValue(30)
 
         f_layout = QtWidgets.QFormLayout()
         h_layout.addLayout(f_layout)
@@ -150,6 +160,21 @@ class AgglomerativeClusteringForm(ClusteringForm):
         spacer = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding,
             QtWidgets.QSizePolicy.Minimum)
         h_layout.addItem(spacer)
+
+    def set_from_config(self, search_radius=0.5, linkage="single", is_xy=True, min_samples=30):
+        self.inputs["search_radius"]["widget"].setValue(search_radius)
+        idx = self.linkage_types.index(linkage)
+        self.inputs["linkage"]["widget"].setCurrentIndex(idx)
+        idx = 0 if is_xy else 1
+        self.inputs["is_xy"]["widget"].setCurrentIndex(idx)
+        self.inputs["min_samples"]["widget"].setValue(min_samples)
+
+    def reset(self):
+        self.inputs["search_radius"]["widget"].setValue(0.5)
+        self.inputs["linkage"]["widget"].setCurrentIndex(0)
+        self.inputs["is_xy"]["widget"].setCurrentIndex(0)
+        self.inputs["min_samples"]["widget"].setValue(30)
+        #self.inputs["leaf_size"]["widget"].setValue(30)
 
 class DBSCANClusteringForm(ClusteringForm):
     def __init__(self, parent=None):
@@ -180,6 +205,19 @@ class DBSCANClusteringForm(ClusteringForm):
             QtWidgets.QSizePolicy.Minimum)
         h_layout.addItem(spacer)
 
+    def set_from_config(self, search_radius=0.5, is_xy=True, min_samples=30):
+        self.inputs["search_radius"]["widget"].setValue(search_radius)
+        idx = 0 if is_xy else 1
+        self.inputs["is_xy"]["widget"].setCurrentIndex(idx)
+        self.inputs["min_samples"]["widget"].setValue(min_samples)
+
+    def reset(self):
+        self.inputs["search_radius"]["widget"].setValue(0.5)
+        self.inputs["is_xy"]["widget"].setCurrentIndex(0)
+        self.inputs["min_samples"]["widget"].setValue(30)
+        #self.inputs["leaf_size"]["widget"].setValue(30)
+
+
 if __name__ == '__main__':
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -191,7 +229,35 @@ if __name__ == '__main__':
     mainLayout = QtWidgets.QVBoxLayout(centralWidget)
     win.setCentralWidget(centralWidget)
     
+    # config testing
+    hlayout = QtWidgets.QHBoxLayout()
+    mainLayout.addLayout(hlayout)
+    get_config = QtWidgets.QPushButton("get config")
+    hlayout.addWidget(get_config)
+    reset_config = QtWidgets.QPushButton("reset config")
+    hlayout.addWidget(reset_config)
+    set_config = QtWidgets.QPushButton("set config")
+    hlayout.addWidget(set_config)
+
     dock = ClusteringDock(parent=win)
+    def test_get_config():
+        print(dock.getSettings())
+
+    def test_set_config():
+        settings = {
+            "method": "dbscan",
+            "params": {
+                "search_radius": 0.5,
+                "is_xy": True,
+                "min_samples":30
+            }
+        }
+        dock.set_from_config(settings["method"], settings["params"])
+    # connect
+    reset_config.clicked.connect(dock.reset)
+    get_config.clicked.connect(test_get_config)
+    set_config.clicked.connect(test_set_config)
+    
     win.addDockWidget(QtCore.Qt.DockWidgetArea(2), dock)
     win.show()
     sys.exit(app.exec_())

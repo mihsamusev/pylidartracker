@@ -164,11 +164,24 @@ class NaiveClustering():
         min_samples=20, linkage="single"):
         self.search_radius = search_radius
         self.is_xy = is_xy
+        self.linkage = linkage
         self.dimensions = 2 if is_xy else 3
         self.min_samples = min_samples # TODO: NOT USED ANYWHERE
         self.clusterer = AgglomerativeClustering(
             n_clusters=None, distance_threshold=search_radius,
             linkage=linkage)
+
+    def get_config(self):
+        config = {
+            "method": "naive", 
+            "params": {
+                "search_radius": self.search_radius,
+                "is_xy": self.is_xy,
+                "linkage": self.linkage,
+                "min_samples": self.min_samples
+                }
+            }
+        return config
 
     def cluster(self, points):
         clusters = []
@@ -196,6 +209,17 @@ class DBSCANClustering():
         self.clusterer = DBSCAN(
             eps=search_radius, min_samples=min_samples,
             n_jobs=self.multiprocess)
+
+    def get_config(self):
+        config = {
+            "method": "dbscan", 
+            "params": {
+                "search_radius": self.search_radius,
+                "is_xy": self.is_xy,
+                "min_samples": self.min_samples
+                }
+            }
+        return config
 
     def cluster(self, points):
         if points.shape[0] == 0:

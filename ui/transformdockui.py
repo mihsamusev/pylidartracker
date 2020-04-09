@@ -12,6 +12,8 @@ class TransformDock(QtWidgets.QDockWidget):
         
         # set central widget and main layout
         self.centralWidget = QtWidgets.QWidget()
+        self.centralWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(self.centralWidget)
         self.mainLayoutV = QtWidgets.QVBoxLayout(self.centralWidget)
 

@@ -86,6 +86,21 @@ class LidarProcessor():
         else:
             self.destroyBgExtractor()
             self.destroyBgSubtractor()
+        
+        #clustering
+        if "clustering" in config.keys():
+            method = config["clustering"]["method"]
+            params = config["clustering"]["params"]
+            self.createClusterer(method, **params)
+        else:
+            self.destroyClusterer()
+
+        if "tracking" in config.keys():
+            method = config["tracking"]["method"]
+            params = config["tracking"]["params"]
+            self.createTracker(method, **params)
+        else:
+            self.destroyTracker()
 
     def save_config(self, configpath):
         with open(configpath, "w") as write_file:
@@ -116,9 +131,13 @@ class LidarProcessor():
                 settings = self.bg_subtractor.get_config()
                 config["background"]["subtractor"] = settings
 
-            # TODO: clusterer part
-            # TODO: tracker part
-            # TODO: result definition part
+            if self.clusterer:
+                settings = self.clusterer.get_config()
+                config["clustering"] = settings
+
+            if self.tracker:
+                settings = self.tracker.get_config()
+                config["tracking"] = settings
 
             json.dump(config, write_file, indent=4)
             print("Config saved to:\n{0}".format(configpath))
@@ -336,19 +355,13 @@ class LidarProcessor():
         self.frameClusters = []
 
     def extractClustersGen(self):
+        self.frameClusters = []
         for i, arr in enumerate(self._preprocessedArrays):
             clusters = self.clusterer.cluster(arr)
             self.frameClusters.append(clusters)
             
             # yield completion status
             yield (i+1)*100/(len(self._originalFrames))
-
-    def extractClusters(self, method, **kwargs):
-        self.clusterer = Clusterer.factory(method, **kwargs)
-        self.frameClusters = []
-        for i, arr in enumerate(self._preprocessedArrays):
-            clusters = self.clusterer.cluster(arr)
-            self.frameClusters.append(clusters)
 
     def destroyClusterer(self):
         self.frameClusters = []
@@ -361,6 +374,7 @@ class LidarProcessor():
         self.tracker = Tracker.factory(method, **kwargs)
 
     def trackClustersGen(self):
+        self.tracker.restart()
         for i, clusters in enumerate(self.frameClusters):
             # TODO: Guarantee that centroid is calculated on creation
             centroids = [c.centroid for c in clusters]
@@ -382,6 +396,48 @@ class LidarProcessor():
     #
     # Entire pipeline
     #
+    def get_status(self):
+        status = {
+            "transform": self.transformer is not None,
+            "clipping": self.clipper is not None,
+            "background_extraction": self.bg_extractor is not None,
+            "background_subtraction": self.bg_subtractor is not None,
+            "clustering": self.clusterer is not None,
+            "tracking": self.tracker is not None,
+        }
+        return status
+
+
+    def updateProcessingGen(self):
+        self.updateBackground()
+        # update preprocessed points
+        self._preprocessedArrays = []
+        self.frameClusters = []
+
+        if self.tracker:
+            self.tracker.restart()
+
+        for (i, frame) in enumerate(self._originalFrames):
+            pts = self.arrayFromFrame(frame)
+            pts = self.preprocessArray(pts)
+            self._preprocessedArrays.append(pts)
+
+                # apply clustering
+            if self.clusterer:
+                clusters = self.clusterer.cluster(pts)
+                self.frameClusters.append(clusters)
+
+                # apply tracking
+            if self.tracker:
+                centroids = [c.centroid for c in clusters]
+                self.tracker.update(centroids)
+                mapping = self.tracker.getInputMapping()
+                for j, c in enumerate(clusters):
+                    c.id = mapping[j]
+
+            # yield completion status
+            yield (i+1)*100/(len(self._originalFrames))
+
     def processingGen(self, start_frame, end_frame):
         if self.clusterer is None or self.tracker is None:
             return

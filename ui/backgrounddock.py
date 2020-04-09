@@ -22,6 +22,8 @@ class BackgroundDock(QtWidgets.QDockWidget):
         
         # set central widget and main layout
         centralWidget = QtWidgets.QWidget()
+        centralWidget.setSizePolicy(
+            QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         self.setWidget(centralWidget)
         mainLayoutV = QtWidgets.QVBoxLayout(centralWidget)
 
@@ -155,7 +157,6 @@ class BackgroundDock(QtWidgets.QDockWidget):
         mainLayoutV.addItem(bottomSpacerV)
 
     def set_from_config(self, path=None, extractor=None, subtractor=None):
-
         validPath = path is not None and os.path.isfile(path)
         if validPath:
             self.loadBackground.setChecked(True)
@@ -178,7 +179,7 @@ class BackgroundDock(QtWidgets.QDockWidget):
 
         if validPath or extractor is not None:
             self.previewButton.setEnabled(True)
-            self.previewButton.setChecked(False)
+            self.previewButton.setChecked(True)
             if subtractor is not None:
                 self.enableSubtraction.setChecked(True)
                 self.radiusBox.setValue(subtractor["params"]["search_radius"])

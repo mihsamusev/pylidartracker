@@ -20,6 +20,14 @@ class Controller():
         self._pcap_frame_count = 0
 
         self.threadpool = QtCore.QThreadPool()
+        self.items_status = {
+            "transform": False,
+            "clipping": False,
+            "background_extraction": False,
+            "background_subtraction": False,
+            "clustering": False,
+            "tracking": False
+        }
 
     def _connectSignals(self):
         # frame scrolling
@@ -32,7 +40,7 @@ class Controller():
         # MENUBAR
         self._view.openFileMenu.triggered.connect(self.analyze_pcap)
         self._view.saveConfigMenu.triggered.connect(self.saveProjectConfig)
-        self._view.loadConfigMenu.triggered.connect(self.loadProjectConfig)
+        self._view.loadConfigMenu.triggered.connect(self.load_config)
 
         # TOOLBAR
         # load 
@@ -81,11 +89,15 @@ class Controller():
 
         # output dialog
         self._view.actionOutput.triggered.connect(self.generate_output)
+        self._view.outputMenu.triggered.connect(self.generate_output)
     #
     # I/O
     #
-    # input
+    # config
     def loadProjectConfig(self):
+        # stop player
+        self.finish_playing()
+
         configpath = self._view.getJSONDialog()
         if not configpath:
             return
@@ -98,11 +110,64 @@ class Controller():
         
         self._view.set_from_config(configpath)
 
+    def load_config(self):
+        # stop player
+        self.finish_playing()
+
+        configpath = self._view.getJSONDialog()
+        if not configpath:
+            return
+        self.config_filename = configpath
+
+        self._model.init_from_config(self.config_filename)
+
+        # lock buttons, activate status bar
+        self._view.enableAllControls(False)
+        self._view.statusBar.showMessage("Applying project configuration...")
+        self._view.statusProgressBar.setVisible(True)
+
+        # Pass the function to execute
+        worker = Worker(self.load_config_fn)
+        worker.signals.progress.connect(self.load_config_progress)
+        worker.signals.finished.connect(self.load_config_completed)
+        self.threadpool.start(worker)
+
+    def load_config_fn(self, progress_callback):
+        for p in self._model.updateProcessingGen():
+            progress_callback.emit(p)
+
+    def load_config_progress(self, n):
+        self._view.statusProgressBar.setValue(n)
+
+    def load_config_completed(self):
+        self._view.statusProgressBar.setValue(0)
+        self._view.statusProgressBar.setVisible(False)
+
+        self._view.set_from_config(self.config_filename)
+
+        self._view.statusBar.showMessage("")
+
+        # enabling only those that are active
+        self.enableLastActiveControls()
+
+        self.updateGraphicsView()
+
+    def saveProjectConfig(self):
+        configpath = self._view.setJSONDialog()
+        if not configpath:
+            return
+        self._model.save_config(configpath)
+
+    # cloud loading
     def analyze_pcap_fn(self, filename, progress_callback):
         self._model.setFilename(filename)
         self._pcap_frame_count = self._model.peek_size()
 
     def analyze_pcap(self):
+        # disable controls
+        self.finish_playing()
+        #self._view.enableAllControls(False) # TODO: Should i block here?
+
         # ask for changes if file is loaded
         if self.pcap_filename is not None: 
             restart = self._view.getProjectRestartMessage()
@@ -158,27 +223,22 @@ class Controller():
         self._view.statusProgressBar.setValue(n)
 
     def frame_loading_complete(self):
-        self._view.statusBar.showMessage(
-            "{} point clouds loaded".format(self._loaded_frame_count))
+        self._view.statusBar.showMessage("")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
 
         # update scroller
         self.updateDataScrollers()
-        # for flexin visuals
-        self.updateGraphicsView()
         # reset all processors
         self._model.resetProcessors()
         # reset dock parameters
         self._view.resetAllDocks()
 
         # enable locked view controls
-        self._view.enableFrameLoading(True)
-        self._view.enableFrameControls(True)
-        self._view.enableConfigLoading(True)
-        self._view.enablePreprocessing(True)
+        self.enableLastActiveControls()
 
-        self._view.enableClustering(True)
+        # for flexin visuals
+        self.updateGraphicsView()
 
     def load_frames_fn(self, from_frame, to_frame, progress_callback):
         self._model.restartBuffering()
@@ -192,11 +252,6 @@ class Controller():
             progress_callback.emit((n+1)*100/(to_frame))
 
     # output
-    def saveProjectConfig(self):
-        configpath = self._view.setJSONDialog()
-        if not configpath:
-            return
-        self._model.save_config(configpath)
 
     def generate_output_fn(self, start_frame, end_frame, progress_callback):
         self._model.restartBuffering()
@@ -205,6 +260,8 @@ class Controller():
             progress_callback.emit(p)
 
     def generate_output(self):
+        # stop player
+        self.finish_playing()
         settings, accepted = self._view.getOutputDialog(max_frames=self._pcap_frame_count-1)
         if not accepted:
             print("[DEBUG] gon return")
@@ -220,6 +277,7 @@ class Controller():
             outputFormat=settings["params"]["file_format"])
 
         # activate status bar
+        self._view.enableAllControls(False)
         self._view.statusBar.showMessage("Writting output ...")
         self._view.statusProgressBar.setVisible(True)
 
@@ -237,10 +295,14 @@ class Controller():
         # also update ETA and i/n frames
 
     def output_writting_complete(self):
-        self._view.statusBar.showMessage("Results written to file")
+        self._view.statusBar.showMessage("")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
         self.outputWritter.close()
+
+        # enabling only those that are active
+        self.enableLastActiveControls()
+
     #
     # MODEL UPDATING
     #
@@ -252,12 +314,8 @@ class Controller():
         # disable controls
         self.finish_playing()
         self._view.enableAllControls(False)
-
-        # activate status bar
         self._view.statusBar.showMessage("Applying preprocessing ...")
         self._view.statusProgressBar.setVisible(True)
-
-        # TODO: block buttons
 
         # Pass the function to execute worker task
         worker = Worker(self._apply_preprocessing_fn)
@@ -266,20 +324,15 @@ class Controller():
         self.threadpool.start(worker)
 
     def frame_preprocessing_complete(self):
-        self._view.statusBar.showMessage("Point clouds preprocessed")
+        self._view.statusBar.showMessage("")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
 
+        # enabling only those that are active
+        self.enableLastActiveControls()
+
+        # update graphics
         self.updateGraphicsView()
-
-        self._view.enableFrameLoading(True)
-        self._view.enableFrameControls(True)
-        self._view.enableConfigLoading(True)
-        self._view.enablePreprocessing(True)
-
-        self._view.enableClustering(True)
-
-
 
     #
     # PLANE FITTING AND TRANSFORM ACTON
@@ -404,6 +457,8 @@ class Controller():
             self.apply_clustering()
         else:
             self._model.destroyClusterer()
+            self._view.enableTracking(False)
+            self._view.enableOuput(False)
             self.previewClusters()
 
     def _apply_clustering_fn(self, progress_callback):
@@ -411,11 +466,11 @@ class Controller():
             progress_callback.emit(p)
 
     def apply_clustering(self):
-        # activate status bar
+        # disable controls
+        self.finish_playing()
+        self._view.enableAllControls(False)
         self._view.statusBar.showMessage("Calculating clusters ...")
         self._view.statusProgressBar.setVisible(True)
-
-        # TODO: block buttons
 
         # Pass the function to execute worker task
         worker = Worker(self._apply_clustering_fn)
@@ -425,9 +480,13 @@ class Controller():
         self.threadpool.start(worker)
 
     def clustering_complete(self):
-        self._view.statusBar.showMessage("Clusters calculated")
+        self._view.statusBar.showMessage("")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
+
+         # enabling only those that are active
+        self.enableLastActiveControls()
+
         self.previewClusters()
 
     #
@@ -441,6 +500,7 @@ class Controller():
             self.apply_tracking()
         else:
             self._model.destroyTracker()
+            self._view.enableOuput(False)
             self.previewClusters()
 
     def _apply_tracking_fn(self, progress_callback):
@@ -448,7 +508,9 @@ class Controller():
             progress_callback.emit(p)
 
     def apply_tracking(self):
-        # activate status bar
+        # disable controls
+        self.finish_playing()
+        self._view.enableAllControls(False)
         self._view.statusBar.showMessage("Tracking clusters ...")
         self._view.statusProgressBar.setVisible(True)
 
@@ -462,9 +524,13 @@ class Controller():
         self.threadpool.start(worker)
 
     def tracking_complete(self):
-        self._view.statusBar.showMessage("Cluster ID calculated")
+        self._view.statusBar.showMessage("")
         self._view.statusProgressBar.setValue(0)
         self._view.statusProgressBar.setVisible(False)
+
+        # enabling only those that are active
+        self.enableLastActiveControls()
+
         self.previewClusters()
 
     #
@@ -503,6 +569,17 @@ class Controller():
 
     def moveFrameSequenceBackward(self):
         self.frameChanged(0)
+    
+    def enableLastActiveControls(self):
+        model_status = self._model.get_status()
+                # enabling only those that are active
+        self._view.enableFrameLoading(True)
+        self._view.enableFrameControls(True)
+        self._view.enableConfigLoading(True)
+        self._view.enablePreprocessing(True)
+        self._view.enableClustering(True)
+        self._view.enableTracking(model_status["clustering"])
+        self._view.enableOutput(model_status["tracking"])
     #
     # GRAPHICS UPDATE
     #

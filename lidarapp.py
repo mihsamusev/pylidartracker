@@ -26,6 +26,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.setMinimumSize(800,600)
         self.centralWidget = QtWidgets.QWidget(parent=self)
         self.centralWidget.setMinimumSize(QtCore.QSize(400, 300))
+        self.centralWidget.setStyleSheet("background-color: black;")
         self.mainLayout = QtWidgets.QVBoxLayout(self.centralWidget)
         self.setCentralWidget(self.centralWidget)
         
@@ -55,7 +56,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.enablePreprocessing(False)
         self.enableClustering(False)
         self.enableTracking(False)
-        self.enableOuput(False)
+        self.enableOutput(False)
 
         # variables
         self.player_running = False
@@ -64,6 +65,13 @@ class LidarView(QtWidgets.QMainWindow):
 
     def connectOwn(self):
         self.actionPlayerRun.triggered.connect(self.switchPlayerState)
+
+        # menu
+        self.transformMenu.triggered.connect(self.showTransformDock)
+        self.clippingMenu.triggered.connect(self.showClippingDock)
+        self.subtractionMenu.triggered.connect(self.showBackgroundDock)
+        self.clusterMenu.triggered.connect(self.showClusteringDock)
+        self.trackerMenu.triggered.connect(self.showTrackingDock)
 
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
@@ -91,11 +99,28 @@ class LidarView(QtWidgets.QMainWindow):
             else:
                 self.backgroundDock.reset()
 
+            # clustering dock
+            if "clustering" in config.keys():
+                method = config["clustering"]["method"]
+                params = config["clustering"]["params"]
+                self.clusteringDock.set_from_config(method, params)
+            else:
+                self.clusteringDock.reset()
+
+            # tracking dock
+            if "tracking" in config.keys():
+                method = config["tracking"]["method"]
+                params = config["tracking"]["params"]
+                self.trackingDock.set_from_config(method, params)
+            else:
+                self.trackingDock.reset()
+
     def resetAllDocks(self):
         self.transformDock.reset()
         self.clippingDock.reset()
         self.backgroundDock.reset()
-
+        self.clusteringDock.reset()
+        self.trackingDock.reset()
     #
     # TOOLBAR RELATED
     #
@@ -298,9 +323,24 @@ class LidarView(QtWidgets.QMainWindow):
     def _createStatusBar(self):
         self.statusBar = QtWidgets.QStatusBar()
         self.setStatusBar(self.statusBar)
-        self.statusBar.showMessage("Load .pcap file to start...")
-        #self.statusBarMessage = QtWidgets.QLabel("Load .pcap file to start...")
-        #self.statusBar.addPermanentWidget(self.statusBarMessage)
+        self.statusBar.showMessage("")
+
+        #self.statusBarMessage = QtWidgets.QLabel("Start by loading a file")
+        #self.statusBar.addWidget(self.statusBarMessage)
+        items = [
+            ("BG READY", False),
+            ("CLUST. READY",False),
+            ("TRACK. READY",False)]
+
+        for text, active in items:
+            w = QtWidgets.QLabel(text)
+            if active:
+                w.setStyleSheet("color: green;")
+            else:
+                w.setStyleSheet("color: red;")
+            #self.statusBar.addWidget(w)
+
+
         self.statusProgressBar = QtWidgets.QProgressBar()
         self.statusProgressBar.setValue(0)
         self.statusProgressBar.setVisible(False)
@@ -317,8 +357,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.transformDock)
 
     def showTransformDock(self):
-        self.hideAllDocks()
-        if not self.transformDock.isVisible():
+        if self.transformDock.isVisible():
+            self.hideAllDocks()
+        else:
+            self.hideAllDocks()
             self.transformDock.setVisible(True)
             self.transformDock.setEnabled(True)
             self.actionTransform.setChecked(True)
@@ -330,8 +372,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.clippingDock)
 
     def showClippingDock(self):
-        self.hideAllDocks()
-        if not self.clippingDock.isVisible():
+        if self.clippingDock.isVisible():
+            self.hideAllDocks()
+        else:
+            self.hideAllDocks()
             self.clippingDock.setVisible(True)
             self.clippingDock.setEnabled(True)
             self.actionClipping.setChecked(True)
@@ -343,8 +387,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.clusteringDock)
 
     def showClusteringDock(self):
-        self.hideAllDocks()
-        if not self.clusteringDock.isVisible():
+        if self.clusteringDock.isVisible():
+            self.hideAllDocks()
+        else:
+            self.hideAllDocks()
             self.clusteringDock.setVisible(True)
             self.clusteringDock.setEnabled(True)
             self.actionCluster.setChecked(True)
@@ -356,8 +402,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.backgroundDock)
 
     def showBackgroundDock(self):
-        self.hideAllDocks()
-        if not self.backgroundDock.isVisible():
+        if self.backgroundDock.isVisible():
+            self.hideAllDocks()
+        else:
+            self.hideAllDocks()
             self.backgroundDock.setVisible(True)
             self.backgroundDock.setEnabled(True)
             self.actionBackground.setChecked(True)
@@ -369,8 +417,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.addDockWidget(QtCore.Qt.DockWidgetArea(2), self.trackingDock)
 
     def showTrackingDock(self):
-        self.hideAllDocks()
-        if not self.trackingDock.isVisible():
+        if self.trackingDock.isVisible():
+            self.hideAllDocks()
+        else:
+            self.hideAllDocks()
             self.trackingDock.setVisible(True)
             self.trackingDock.setEnabled(True)
             self.actionTracker.setChecked(True)
@@ -386,6 +436,7 @@ class LidarView(QtWidgets.QMainWindow):
             action.setChecked(False)
 
 # enables/disables
+
     def enableAllControls(self, enabled=True):
         self.enableFrameLoading(enabled)
         self.enableFrameControls(enabled)
@@ -393,7 +444,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.enablePreprocessing(enabled)
         self.enableClustering(enabled)
         self.enableTracking(enabled)
-        self.enableOuput(enabled)
+        self.enableOutput(enabled)
 
     def enableFrameLoading(self, enabled=True):
         self.actionLoadPCAP.setEnabled(enabled)
@@ -426,7 +477,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionTracker.setEnabled(enabled)
         self.trackerMenu.setEnabled(enabled)
 
-    def enableOuput(self, enabled=True):
+    def enableOutput(self, enabled=True):
         self.actionOutput.setEnabled(enabled)
         self.outputMenu.setEnabled(enabled)
 

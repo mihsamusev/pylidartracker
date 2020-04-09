@@ -20,6 +20,16 @@ class CentroidTracker():
         self.disappeared = OrderedDict()
         self.max_missing = max_missing
         self.inputMapping = {}
+    
+    def get_config(self):
+        config = {
+            "method": "nearest_neigbour", 
+            "params": {
+                "max_missing": self.max_missing,
+                }
+            }
+        return config
+
     def register(self, centroid):
         # when registering an object we use the next available object
         # ID to store the centroid
