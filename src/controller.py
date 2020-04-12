@@ -543,6 +543,7 @@ class Controller():
         self.updateGraphicsView()
 
     def updateDataScrollers(self):
+        self._view.setMaxFrames(self._loaded_frame_count - 1)
         self._view.frameSlider.setMaximum(self._loaded_frame_count - 1)
         self._view.frameSlider.setValue(self._currentFrameIdx)
         self._view.frameSpinBox.setMaximum(self._loaded_frame_count - 1)

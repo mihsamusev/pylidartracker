@@ -5,8 +5,10 @@ class OutputWriter:
     def __init__(self, outputPath, outputFormat="json", bufSize=1000):
     # verify that file doesnt exist
         if os.path.exists(outputPath):
-            raise ValueError("Specified path to file already exists",
-                outputPath)
+            #os.remove(outputPath)
+            with open(outputPath, "w") as f:
+                f.write("")
+            #raise ValueError("Specified path to file already exists", outputPath)
     
     # initialize outputfile
         self.outputFile = open(outputPath, 'a')

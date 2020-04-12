@@ -16,13 +16,14 @@ from ui.inputdialog import InputDialog
 
 from controller import Controller
 from processing.lidarprocessor import LidarProcessor
+import imageresource
 
 class LidarView(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         # main window
-        self.setWindowTitle("LIBTrAna - Lidar based traffic analysis")
-        self.setWindowIcon(QtGui.QIcon("./images/velodyne_hdl.png"))
+        self.setWindowTitle("pylidartracker - lidar based traffic analysis")
+        self.setWindowIcon(QtGui.QIcon(":/images/velodyne_hdl.png"))
         self.setMinimumSize(800,600)
         self.centralWidget = QtWidgets.QWidget(parent=self)
         self.centralWidget.setMinimumSize(QtCore.QSize(400, 300))
@@ -33,10 +34,15 @@ class LidarView(QtWidgets.QMainWindow):
         self.setDockOptions(QtGui.QMainWindow.AnimatedDocks | QtGui.QMainWindow.AllowTabbedDocks)
         
         self._createMenuBar()
+
         self._createToolBar()
         self._createToolbarPlayer()
+        #self._createDisplayCheckboxes()
+
         self._createStatusBar()
+
         self._createGraphicsDisplay()
+
         self._createTransformDock()
         self._createClippingDock()
         self._createBackgroundDock()
@@ -72,6 +78,26 @@ class LidarView(QtWidgets.QMainWindow):
         self.subtractionMenu.triggered.connect(self.showBackgroundDock)
         self.clusterMenu.triggered.connect(self.showClusteringDock)
         self.trackerMenu.triggered.connect(self.showTrackingDock)
+
+        # status bar to docks
+        self.showCropBox.toggled.connect(
+            self.clippingDock.previewButton.setChecked)
+        self.clippingDock.previewButton.toggled.connect(
+            self.showCropBox.setChecked)
+
+        self.showBackground.toggled.connect(
+            self.backgroundDock.previewButton.setChecked)
+        self.backgroundDock.previewButton.toggled.connect(
+            self.showBackground.setChecked)
+
+        self.showClusters.toggled.connect(
+            self.clusteringDock.previewButton.setChecked)
+        self.clusteringDock.previewButton.toggled.connect(
+            self.showClusters.setChecked)
+
+        #self._view.showBackground
+        #self._view.showClusters
+
 
     def set_from_config(self, configpath):
         with open(configpath, "r") as read_file:
@@ -137,7 +163,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionLoadPCAP = QtWidgets.QAction(parent=self)
         self.actionLoadPCAP.setToolTip('Load .pcap point cloud stream file') 
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/velodyne_hdl.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/velodyne_hdl.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionLoadPCAP.setIcon(icon)
         self.toolBar.addAction(self.actionLoadPCAP)
@@ -149,7 +175,7 @@ class LidarView(QtWidgets.QMainWindow):
             "Define new XY plane for the point clouds")
         self.actionTransform.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/transform.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/transform.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTransform.setIcon(icon)
         self.toolBar.addAction(self.actionTransform)
@@ -160,7 +186,7 @@ class LidarView(QtWidgets.QMainWindow):
             "Clip out unnecessary point cloud parts")
         self.actionClipping.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/clipping.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/clipping.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionClipping.setIcon(icon)
         self.toolBar.addAction(self.actionClipping)
@@ -171,7 +197,7 @@ class LidarView(QtWidgets.QMainWindow):
             "Extract and subtract background part of the point clouds")
         self.actionBackground.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/bg_extraction.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/bg_extraction.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionBackground.setIcon(icon)
         self.toolBar.addAction(self.actionBackground)
@@ -182,7 +208,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionCluster.setToolTip("Calculate point cloud clusters")
         self.actionCluster.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/clustering.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/clustering.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionCluster.setIcon(icon)
         self.toolBar.addAction(self.actionCluster)
@@ -192,7 +218,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionTracker.setToolTip("Track point cloud clusters")
         self.actionTracker.setCheckable(True)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/tracking.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/tracking.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionTracker.setIcon(icon)
         self.toolBar.addAction(self.actionTracker)
@@ -202,77 +228,68 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionOutput = QtWidgets.QAction(parent=self)
         self.actionOutput.setToolTip("Generate output file with cluster tracks")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("./images/output.png"),
+        icon.addPixmap(QtGui.QPixmap(":/images/output.png"),
             QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.actionOutput.setIcon(icon)
         self.toolBar.addAction(self.actionOutput)
 
+        self.toolBar.addSeparator()
+        spacer = QtWidgets.QWidget()
+        spacer.setFixedWidth(50)
+        self.toolBar.addWidget(spacer)
+
     def _createToolbarPlayer(self):
         self.toolBar.addSeparator()
         self.actionPlayerBack = QtWidgets.QAction(
-            QtGui.QIcon("./images/player_back.png"),"",self)
+            QtGui.QIcon(":/images/player_back.png"),"",self)
         self.toolBar.addAction(self.actionPlayerBack)
 
         self.actionPlayerRun = QtWidgets.QAction(
-            QtGui.QIcon("./images/player_run.png"),"",self)
+            QtGui.QIcon(":/images/player_run.png"),"",self)
         self.toolBar.addAction(self.actionPlayerRun)
 
         self.actionPlayerForward = QtWidgets.QAction(
-            QtGui.QIcon("./images/player_forward.png"),"",self)
+            QtGui.QIcon(":/images/player_forward.png"),"",self)
         self.toolBar.addAction(self.actionPlayerForward)
 
+        self.toolBar.addSeparator()
         self.frameSlider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.frameSlider.setFixedWidth(200)
         self.toolBar.addWidget(self.frameSlider)
+
+        self.toolBar.addSeparator()
         self.frameSpinBox = QtWidgets.QSpinBox()
         self.toolBar.addWidget(self.frameSpinBox)
+
+        self.maxFramesLabel = QtWidgets.QLabel(" / 0")
+        self.toolBar.addWidget(self.maxFramesLabel)
+        self.toolBar.addSeparator()
+
+        spacer = QtWidgets.QWidget()
+        spacer.setFixedWidth(50)
+        self.toolBar.addWidget(spacer)
+
+    def _createDisplayCheckboxes(self):
+        self.toolBar.addSeparator()
+        self.showCropBoxToolbar = QtWidgets.QCheckBox("display crop box")
+        self.showBackgroundToolbar = QtWidgets.QCheckBox("display background")
+        self.showClustersToolbar = QtWidgets.QCheckBox("display cluster boxes")
+        self.toolBar.addWidget(self.showCropBoxToolbar)
+        self.toolBar.addWidget(self.showBackgroundToolbar)
+        self.toolBar.addWidget(self.showClustersToolbar)
+        self.toolBar.addSeparator()
+
+    def setMaxFrames(self, n):
+        self.maxFramesLabel.setText(" / {}".format(n))
 
     def switchPlayerState(self):
         if self.player_running:
             self.actionPlayerRun.setIcon(
-                QtGui.QIcon("./images/player_run.png"))
+                QtGui.QIcon(":/images/player_run.png"))
         else:
             self.actionPlayerRun.setIcon(
-                QtGui.QIcon("./images/player_pause.png"))
+                QtGui.QIcon(":/images/player_pause.png"))
         self.player_running = not self.player_running
-
-    #
-    # DIALOGS
-    #
-    def getPCAPDialog(self):
-        fname = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open File','',"PCAP Files (*.pcap)")
-        return fname[0]
-
-    def getJSONDialog(self):
-        fname = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Open File','',"JSON Files (*.json)")
-        return fname[0]
-
-    def setJSONDialog(self):
-        fname = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Save File','',"JSON Files (*.json)")
-        return fname[0]
-
-    def getProjectRestartMessage(self):
-        box = QtWidgets.QMessageBox()
-        box.setIcon(QtWidgets.QMessageBox.Information)
-        box.setText("Unsaved changes will be lost.\nDo you want to continue?")
-        box.setWindowTitle("Open new PCAP")
-        box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
-
-        result = box.exec_()
-        return result == QtWidgets.QMessageBox.Yes
-
-    def getOutputDialog(self, max_frames):
-        dlg = OutputDialog(max_frames, self)
-        result = dlg.exec_()
-        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
-
-    def getInputDialog(self, max_frames):
-        dlg = InputDialog(max_frames, self)
-        result = dlg.exec()
-        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
 
     #
     # MENUBAR RELATED
@@ -319,7 +336,6 @@ class LidarView(QtWidgets.QMainWindow):
     #
     # STATUSBAR RELATED
     #
-
     def _createStatusBar(self):
         self.statusBar = QtWidgets.QStatusBar()
         self.setStatusBar(self.statusBar)
@@ -327,6 +343,14 @@ class LidarView(QtWidgets.QMainWindow):
 
         #self.statusBarMessage = QtWidgets.QLabel("Start by loading a file")
         #self.statusBar.addWidget(self.statusBarMessage)
+
+        self.showCropBox = QtWidgets.QCheckBox("display crop box")
+        self.showBackground = QtWidgets.QCheckBox("display background")
+        self.showClusters = QtWidgets.QCheckBox("display cluster boxes")
+        self.statusBar.addWidget(self.showCropBox)
+        self.statusBar.addWidget(self.showBackground)
+        self.statusBar.addWidget(self.showClusters)
+
         items = [
             ("BG READY", False),
             ("CLUST. READY",False),
@@ -347,9 +371,46 @@ class LidarView(QtWidgets.QMainWindow):
         self.statusBar.addPermanentWidget(self.statusProgressBar)
 
     #
+    # DIALOGS
+    #
+    def getPCAPDialog(self):
+        fname = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open File','',"PCAP Files (*.pcap)")
+        return fname[0]
+
+    def getJSONDialog(self):
+        fname = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Open File','',"JSON Files (*.json)")
+        return fname[0]
+
+    def setJSONDialog(self):
+        fname = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Save File','',"JSON Files (*.json)")
+        return fname[0]
+
+    def getProjectRestartMessage(self):
+        box = QtWidgets.QMessageBox()
+        box.setIcon(QtWidgets.QMessageBox.Information)
+        box.setText("Unsaved changes will be lost.\nDo you want to continue?")
+        box.setWindowTitle("Open new PCAP")
+        box.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+
+        result = box.exec_()
+        return result == QtWidgets.QMessageBox.Yes
+
+    def getOutputDialog(self, max_frames):
+        dlg = OutputDialog(max_frames, self)
+        result = dlg.exec_()
+        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
+
+    def getInputDialog(self, max_frames):
+        dlg = InputDialog(max_frames, self)
+        result = dlg.exec()
+        return (dlg.getSettings(), result == QtWidgets.QDialog.Accepted)
+
+    #
     # DOCKS
     #
-
     def _createTransformDock(self):
         self.transformDock = TransformDock(parent=self)
         self.transformDock.setVisible(False)
@@ -435,7 +496,7 @@ class LidarView(QtWidgets.QMainWindow):
             dock.setEnabled(False)
             action.setChecked(False)
 
-# enables/disables
+    # enables/disables
 
     def enableAllControls(self, enabled=True):
         self.enableFrameLoading(enabled)
@@ -461,6 +522,10 @@ class LidarView(QtWidgets.QMainWindow):
         self.frameSlider.setEnabled(enabled)
         self.frameSpinBox.setEnabled(enabled)
 
+        self.showCropBox.setEnabled(enabled)
+        self.showBackground.setEnabled(enabled)
+        self.showClusters.setEnabled(enabled)
+
     def enablePreprocessing(self, enabled=True):
         self.actionTransform.setEnabled(enabled)
         self.actionClipping.setEnabled(enabled)
@@ -481,7 +546,7 @@ class LidarView(QtWidgets.QMainWindow):
         self.actionOutput.setEnabled(enabled)
         self.outputMenu.setEnabled(enabled)
 
-if __name__ == "__main__":
+def main():
     # for debugging
     ap = argparse.ArgumentParser()
     ap.add_argument("-p", "--pcap", default=None,
@@ -507,3 +572,6 @@ if __name__ == "__main__":
         #ctrl.loadProjectConfig(configpath=args["config"])
 
     sys.exit(app.exec())
+
+if __name__ == "__main__":
+    main()

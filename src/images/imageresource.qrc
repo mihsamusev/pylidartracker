@@ -1,0 +1,15 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource prefix="">
+    <file>images/bg_extraction.png</file>
+    <file>images/clipping.png</file>
+    <file>images/clustering.png</file>
+    <file>images/output.png</file>
+    <file>images/player_back.png</file>
+    <file>images/player_forward.png</file>
+    <file>images/player_pause.png</file>
+    <file>images/player_run.png</file>
+    <file>images/tracking.png</file>
+    <file>images/transform.png</file>
+    <file>images/velodyne_hdl.png</file>
+</qresource>
+</RCC>

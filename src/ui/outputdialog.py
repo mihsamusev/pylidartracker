@@ -139,7 +139,7 @@ class TrackedClustersForm(OutputTypeForm):
         h_layout = QtWidgets.QHBoxLayout(self)
         # create dictionary with names labels and widgets
         self.inputs["file_format"] = {"label":"file format:","widget": QtWidgets.QComboBox()}
-        [self.inputs["file_format"]["widget"].addItem(i) for i in ["json","csv"]]
+        [self.inputs["file_format"]["widget"].addItem(i) for i in ["json"]]
         #self.inputs["include_boxes"] = {"label":"include cluster boxes:","widget": QtWidgets.QComboBox()}
         #[self.inputs["include_boxes"]["widget"].addItem(i) for i in ["yes","no"]]
 

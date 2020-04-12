@@ -188,7 +188,6 @@ class BackgroundDock(QtWidgets.QDockWidget):
         else:
             self.groupBox2.setEnabled(False)
 
-
     def reset(self):
         self.loadBackground.setChecked(True)
         self.loadedLabel.setText("Background not loaded")
@@ -248,9 +247,9 @@ class BackgroundDock(QtWidgets.QDockWidget):
             "method":"kd_tree",
             "params": {
                 "search_radius": self.radiusBox.value()
+                }
             }
         }
-    }
         return settings
 
 if __name__ == '__main__':

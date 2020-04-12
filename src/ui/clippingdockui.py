@@ -115,10 +115,10 @@ class ClippingDock(QtWidgets.QDockWidget):
 
 
         # togles for display and inverse
-        self.displayCropBox = QtWidgets.QCheckBox("Display crop box")
+        self.previewButton = QtWidgets.QCheckBox("Display crop box")
         self.inverseCropping = QtWidgets.QCheckBox(
             "Inverse cropping (keep points outside range)")
-        self.groupLayoutV1.addWidget(self.displayCropBox)
+        self.groupLayoutV1.addWidget(self.previewButton)
         self.groupLayoutV1.addWidget(self.inverseCropping)
 
         # apply button
@@ -135,19 +135,19 @@ class ClippingDock(QtWidgets.QDockWidget):
 
     def set_from_config(self, polygon, z_range, inverse):
         self.enableCropping.setChecked(True)
-        self.displayCropBox.setChecked(False)
+        self.previewButton.setChecked(False)
                 
         self.table.setData(polygon)
         self.zMinBox.setValue(z_range[0])
         self.zMaxBox.setValue(z_range[1])
         self.addxDSB.setValue(1.0)
         self.addyDSB.setValue(1.0)
-        self.displayCropBox.setChecked(True)
+        self.previewButton.setChecked(True)
         self.inverseCropping.setChecked(inverse)
 
     def reset(self):
         self.enableCropping.setChecked(False)
-        self.displayCropBox.setChecked(False)
+        self.previewButton.setChecked(False)
 
         self.table.setData(None)
         self.zMinBox.setValue(-1.0)
@@ -168,7 +168,7 @@ class ClippingDock(QtWidgets.QDockWidget):
         self.zMinBox.valueChanged.connect(self._updatezmin)
         self.zMaxBox.valueChanged.connect(self._updatezmax)
         self.table.valueChanged.connect(self._updateData)
-        self.displayCropBox.stateChanged.connect(self._updateDisplay)
+        self.previewButton.stateChanged.connect(self._updateDisplay)
         self.addxBtn.clicked.connect(self.addX)
         self.addyBtn.clicked.connect(self.addY)
 
@@ -210,7 +210,7 @@ class ClippingDock(QtWidgets.QDockWidget):
     def getSettings(self):
         settings = {
             "transform": self.enableCropping.isChecked(),
-            "display": self.displayCropBox.isChecked(),
+            "display": self.previewButton.isChecked(),
             "params": {
                 "z_range": self._range,
                 "polygon": self._data,
