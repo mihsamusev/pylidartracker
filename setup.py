@@ -7,7 +7,7 @@ setup(
         author_email ='msam@build.aau.dk', 
         url ='https://github.com/mihsamusev/pylidartracker', 
         description ='UI for processing of data collected with Velodyne lidar', 
-        long_description = "Check the GitHub homepage for getting started and documentation", # TODO: add DESCRIPTION.txt that is excluded
+        long_description = "Check the GitHub homepage for getting started", # TODO: add DESCRIPTION.txt that is excluded
         license ='MIT',
         package_dir={"": "src"},
         py_modules=["app","controller","imageresource"],
