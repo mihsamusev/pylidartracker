@@ -21,11 +21,11 @@ Alternatively, install from source preferably using git. Note that you will need
 git clone https://github.com/mihsamusev/pylidartracker.git
 ```
 ### Demo
-The files for the demo are store in [OneDrive demo data folder](https://aaudk-my.sharepoint.com/:f:/g/personal/msa_civil_aau_dk/EvAToLzFPiFPq0mdXS5bou4BtGgRxRaFKDY1T8UgSPJAuw?e=EPlfzX). The folder contains point cloud videos street.pcap and office.pcap as well as optional project configuration files street_config.json and office_config.json.
+The files for the demo are store in [OneDrive demo data folder](https://aaudk-my.sharepoint.com/:f:/g/personal/msa_civil_aau_dk/EvAToLzFPiFPq0mdXS5bou4BtGgRxRaFKDY1T8UgSPJAuw?e=EPlfzX). The folder contains point cloud videos `street.pcap` and `office.pcap` as well as optional project configuration files `street_config.json` and `office_config.json`.
 
 Workflow:
 
-1) Open a .pcap file to be analyzed, choose amount of frames to preview. Small amount of frames (100-200) is suggested because it allows to quickly define processing steps that are later going to be applied for the entire file.
+1) Open a .pcap file to be analyzed, choose amount of frames to preview. Small amount of frames (100-300) is suggested because it allows to quickly define processing steps that are later going to be applied for the entire file.
 2) Perform pre-processing, coordinate transformation, cloud clipping and background subtraction to prepare the poit cloud frames for clustering
 3) Perform clustering of point cloud frames into individual objects
 4) Perform cluster tracking
@@ -35,22 +35,25 @@ Workflow:
 
 ## Built with
 Frontend:
-- [PyQt5](https://pypi.org/project/PyQt5/) for user interface
-- [pyqtgraph](http://www.pyqtgraph.org/), [pyopengl](https://pypi.org/project/PyOpenGL/) for visualization
+- [PyQt5](https://pypi.org/project/PyQt5/) for the user interface and threading
+- [pyqtgraph](http://www.pyqtgraph.org/), [pyopengl](https://pypi.org/project/PyOpenGL/) for 3D visualization
 
 Backend: 
 - [numpy](https://numpy.org/), [scikit-learn](https://scikit-learn.org/stable/), [scikit-image](https://scikit-image.org/) for mathematical operations
 - [dpkt](https://dpkt.readthedocs.io/en/latest/) for .pcap file parsing
 
 ## Future work
+Following bulletpoints are in priority for future development.
+### Extended documentation
++ create read the docs style getting started guide
+### Testing
++ write unit tests for both backend and frontend
++ set up Travis, passing / failing badge, maybe test coverage as well
 ### UI
 + create status bar messages of last action and current program state (fx, which pre-processors are up to date)
 + pack player to a separate class
 + run the app from console with flags for fast .pcap file and config loading for advanced user / debugging
 + show tick boxes on main window to display bg, clusters, scale point sizes
-### Testing
-+ write unit tests for both backend and frontend
-+ set up Travis, passing / failing badge, maybe test coverage as well
 ### I/O
 + Skipping frames should be faster than reading. Current functionality skips frames by reading them and not saving to a list.
 + Create cache that stores indexing of the the pcap file during peeking the number of frames. Indexing is used later to load frames with given offset. Having indexing one can load frames by collecting all the correct packages (right length + port) into one buffer and parse it in one call. In principle that should give a very fast loading of files who have been loaded at least once before.
