@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="Toolbar">
+    <file>images/velodyne_hdl.png</file>
+    <file>images/transform.png</file>
+    <file>images/select.png</file>
+    <file>images/bg_extraction.png</file>
+    <file>images/clipping.png</file>
+    <file>images/clustering.png</file>
+    <file>images/tracking.png</file>
+  </qresource>
+</RCC>
