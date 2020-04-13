@@ -7,7 +7,7 @@ PyLidarTracker is a desktop traffic analysis software for pre-processing point c
 ## Features
 Open .pcap files for preview, pre-processing/editing in terms of coordinate transformation, clipping, background subtraction, clustering and cluster tracking. Save project config files (could be called callibration files) that can be appled to the files from similar experimental setup to avoid repetitive steps in the analysis proccess. Output .json file with detected road user ID, time and position per point cloud video frame.
 
-BLAZING VISUALS HERE
+![Preview](docs/preview.gif)
 
 ## Getting started
 
@@ -20,6 +20,7 @@ Alternatively, install from source preferably using git. Note that you will need
 ```
 git clone https://github.com/mihsamusev/pylidartracker.git
 ```
+
 ### Demo
 The files for the demo are store in [OneDrive demo data folder](https://aaudk-my.sharepoint.com/:f:/g/personal/msa_civil_aau_dk/EvAToLzFPiFPq0mdXS5bou4BtGgRxRaFKDY1T8UgSPJAuw?e=EPlfzX). The folder contains point cloud videos `street.pcap` and `office.pcap` as well as optional project configuration files `street_config.json` and `office_config.json`.
 

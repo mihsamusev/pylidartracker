@@ -81,7 +81,7 @@ class ClusteringDock(QtWidgets.QDockWidget):
 
     def set_from_config(self, method, params):
         self.enableProcessing.setChecked(True)
-        self.previewButton.setChecked(False)
+        self.previewButton.setChecked(True)
         idx = self.methods.index(method)
         self.method.setCurrentIndex(idx)
         self.method_forms[idx].set_from_config(**params)
