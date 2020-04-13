@@ -27,7 +27,7 @@ The files for the demo are store in [OneDrive demo data folder](https://aaudk-my
 Workflow:
 
 1) Open a .pcap file to be analyzed, choose amount of frames to preview. Small amount of frames (100-300) is suggested because it allows to quickly define processing steps that are later going to be applied for the entire file.
-2) Perform pre-processing, coordinate transformation, cloud clipping and background subtraction to prepare the poit cloud frames for clustering
+2) Perform pre-processing, coordinate transformation, cloud clipping and background subtraction to prepare the point cloud frames for clustering
 3) Perform clustering of point cloud frames into individual objects
 4) Perform cluster tracking
 5) Optionally, save the previous steps to config file that can be re-run later to recreate the processing steps undertaken in the project.
