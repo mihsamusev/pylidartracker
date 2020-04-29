@@ -6,7 +6,7 @@ class BackgroundExtractor:
         self.numScanLines = 32
         self.percentile = percentile
         self.non_zero = non_zero
-        self.n_frames = n_frames
+        self.n_frames = n_frames # TODO: NOT USED!!!
         self.cartesian = cartesian
         self.background = None
 

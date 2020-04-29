@@ -73,9 +73,12 @@ class KDTreeSubtractor():
         return arrayTree.data[idx]
 
     def subtract(self, arr):
-        counts = self.bgTree.query_radius(arr,
-            r=self.search_radius, count_only=True)
-        return arr[counts==0]
+        if arr.size == 0:
+            return arr
+        else:
+            counts = self.bgTree.query_radius(arr,
+                r=self.search_radius, count_only=True)
+            return arr[counts==0]
 
     def get_config(self):
         return {
