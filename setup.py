@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
   
 setup( 
         name ='pylidartracker', 
-        version ='1.0.1', 
+        version ='1.0.3', 
         author ='Mihhail Samusev', 
         author_email ='msam@build.aau.dk', 
         url ='https://github.com/mihsamusev/pylidartracker', 
