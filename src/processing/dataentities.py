@@ -43,7 +43,6 @@ class LaserFiring:
         self.distance = distance
         self.intensity = intensity
 
-
 class Frame:
     def __init__(self):
         size = 70000
@@ -59,14 +58,12 @@ class Frame:
         self.aziRad = None
         self.eleRad = None
 
-
     def radiansCheck(self):
         if(self.aziRad is None):
             self.aziRad = np.deg2rad(self.azimuth)
         if(self.eleRad is None):
             self.eleRad = np.deg2rad(self.elevation)
         
-
     def getXs(self):
         self.radiansCheck()
         if(self.x is None):
