@@ -20,9 +20,9 @@ setup(
             "scikit-image",
             "scikit-learn",
             "scipy",
-            "PyQt5==5.13",
+            "PyQt5",
             "pyopengl",
-            "pyqtgraph",
+            "pyqtgraph==0.11.0",
         ], 
         entry_points ={ 
             'console_scripts': [ 
