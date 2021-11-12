@@ -117,8 +117,10 @@ class ExampleController():
         self.dock.enableResults(False)
 
     def _countPoints(self):
-        print("data ready!!! GONN TRANSFORM SHTR")
-        print("Gonnna use")
+        print(self.graphics.getSelectedPoints())
+        self.dock.pickBtn.setChecked(False)
+
+    def _countOnePoint(self):
         print(self.graphics.getSelectedPoints())
         self.dock.pickBtn.setChecked(False)
 

@@ -37,13 +37,35 @@ class PlaneTransformer():
 
         # rotate
         axisZ = np.array([0, 0, 1])
-        q = self.getQuaternion(self.normal, axisZ)
-        data = q.apply(data).astype("float32")
+        r = self.get_rotation_matrix(self.normal, axisZ)
+        data = r.apply(data).astype("float32")
         return data
 
-    def getQuaternion(self, norm, axis):
-        theta = np.arccos(np.dot(norm, axis))
-        rotAxis = np.cross(norm, axis)
+    def rotate_to_new_x(self, data, vx):
+        """
+        rotate data around z axis so that new x direction matches vx 
+        """
+        axisX = np.array([1, 0, 0])
+        # project vx to XY plane
+        vx[2] = 0
+        r = self.get_rotation_matrix(axisX, vx)
+        data = r.apply(data).astype("float32")
+        return data
+
+    def translate_to(self, data, x, y, z):
+        """
+        Translate to a new origin being x,y,z
+        """
+        data -= np.array([x,y,z])
+        return data
+
+    def get_rotation_matrix(self, fromAxis, toAxis):
+        """
+        This function finds a rotation from quaternion
+        that rotates one vector to the orientation of another
+        """
+        theta = np.arccos(np.dot(fromAxis, toAxis))
+        rotAxis = np.cross(fromAxis, toAxis)
         rotAxis = rotAxis / np.linalg.norm(rotAxis)
 
         w = np.cos(theta / 2)

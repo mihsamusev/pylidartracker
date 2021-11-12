@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
   
 setup( 
         name ='pylidartracker', 
-        version ='1.0.0', 
+        version ='1.0.3', 
         author ='Mihhail Samusev', 
         author_email ='msam@build.aau.dk', 
         url ='https://github.com/mihsamusev/pylidartracker', 
@@ -22,7 +22,7 @@ setup(
             "scipy",
             "PyQt5",
             "pyopengl",
-            "pyqtgraph",
+            "pyqtgraph==0.11.0",
         ], 
         entry_points ={ 
             'console_scripts': [ 

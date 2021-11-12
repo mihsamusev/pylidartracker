@@ -382,10 +382,6 @@ class Controller():
             self._view.transformDock.updateResult(None)
             self._model.destroyTransformer()
             self.apply_preprocessing()
-
-        # update view and status bar
-        self.updateGraphicsView()
-
     #
     # CLIPPING ACTION
     #
@@ -401,9 +397,6 @@ class Controller():
             self._view.clippingDock.reset()
             self._model.destroyClipper()
             self.apply_preprocessing()
-
-        #update view and status bar
-        self.updateGraphicsView()
 
     #
     # BG EXTRACTION / SUBTRACTION
@@ -442,8 +435,6 @@ class Controller():
             self._model.destroyBgSubtractor()
             self.apply_preprocessing()
 
-        #update view and status bar
-        self.updateGraphicsView()
     #
     # CLUSTERING
     #
